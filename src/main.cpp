@@ -24,10 +24,11 @@ Interact with paintbrush using ray intersection tests, and draw 3D spheres that 
 
 
 #include <vector>
+#include "sound.hpp"
 
 using namespace al;
 
-
+/*
 class Sound : public SynthVoice {
  public:
   // Unit generators
@@ -102,6 +103,7 @@ class Sound : public SynthVoice {
 
   void onTriggerOff() override { mAmpEnv.release(); }
 };
+*/
 
 struct RayBrush : App {
 
@@ -113,6 +115,7 @@ struct RayBrush : App {
   std::vector <Vec3f> pos;
   std::vector <Color> colorSpheres;
   Color colorPicker{1, 1, 1};
+  bool move_with_mouse = false;
 
 
   //variables for sound
@@ -144,8 +147,8 @@ struct RayBrush : App {
 
   void onAnimate(double dt) override {
     // The GUI is prepared here
-    navControl().useMouse(!isImguiUsingInput()); //allows screen to move with mouse
-
+   
+    //navControl().useMouse(!isImguiUsingInput()); //allows screen to move with mouse
     //navControl().active(!isImguiUsingInput());  // not sure what this does
     
     imguiBeginFrame();
@@ -154,7 +157,11 @@ struct RayBrush : App {
     synthManager.drawSynthControlPanel();
     
     // Edit 3 floats representing a color
-    ImGui::ColorEdit3("clear color", colorPicker.components);
+    ImGui::ColorEdit3("Color", colorPicker.components);
+    ImGui::Checkbox("Move With Mouse", &move_with_mouse);
+    if (move_with_mouse) {
+      navControl().useMouse(!isImguiUsingInput()); //allows screen to move with mouse
+     }
     ImGui::End();
     imguiEndFrame();
   }
@@ -182,9 +189,6 @@ struct RayBrush : App {
     //change z coord with gui
     nav().pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); //zoom in and out, higher z is out farther away
     light.pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); // where the light is set
-    
-    
-
   }
 
   Vec3d unproject(Vec3d screenPos) {
@@ -195,28 +199,7 @@ struct RayBrush : App {
     return worldPos4.sub<3>(0) / worldPos4.w;
   }
 
-  Rayd getPickRay(int screenX, int screenY) {
-    Rayd r;
-    Vec3d screenPos;
-    screenPos.x = (screenX * 1. / width()) * 2. - 1.;
-    screenPos.y = ((height() - screenY) * 1. / height()) * 2. - 1.;
-    screenPos.z = -1.;
-    Vec3d worldPos = unproject(screenPos);
-    r.origin().set(worldPos);
 
-    screenPos.z = 1.;
-    worldPos = unproject(screenPos);
-    r.direction().set(worldPos);
-    r.direction() -= r.origin();
-    r.direction().normalize();
-    return r;
-  }
-
-  bool onMouseMove(const Mouse &m) override {
-    // intersect ray with each sphere in scene
-
-    return true;
-  }
   bool onMouseDown(const Mouse &m) override {
     // if mouse clicks on image gui, do not draw!!!
     if(isImguiUsingInput()){
@@ -252,7 +235,6 @@ struct RayBrush : App {
       }
     Color sphereColor = colorPicker;
     colorSpheres.push_back(sphereColor);
-
     
     return true;
   }
@@ -269,7 +251,6 @@ struct RayBrush : App {
     Vec3d worldPos = unproject(screenPos);
     //add a sphere to plane
     Vec3f position = Vec3f(worldPos.x, worldPos.y, worldPos.z);
-    //std::cout<<"postion = "<< position <<std::endl;
 
     pos.push_back(position);
     Color sphereColor = colorPicker;
