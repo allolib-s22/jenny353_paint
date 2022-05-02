@@ -116,7 +116,8 @@ struct RayBrush : App {
   std::vector <Color> colorSpheres;
   Color colorPicker{1, 1, 1};
   bool move_with_mouse = false;
-
+  
+  std::vector <int> last_stroke_positions; // keeps track of where all the stroke positions start for the undo function 
 
   //variables for sound
   SynthGUIManager<Sound> synthManager{"Sound"};
@@ -162,6 +163,21 @@ struct RayBrush : App {
     if (move_with_mouse) {
       navControl().useMouse(!isImguiUsingInput()); //allows screen to move with mouse
      }
+    if (ImGui::Button("Clear Drawing")) {
+        // Buttons return true when clicked
+        // clears the screen
+      pos.clear();
+      colorSpheres.clear(); 
+    }
+    if (ImGui::Button("Undo")) {
+        // undoes the most recent stroke from last on mouse down
+        // erase the last elements from last_stroke_position to end:
+        int getPrevStroke = last_stroke_positions.back();
+        last_stroke_positions.pop_back();
+        pos.erase(pos.begin() + getPrevStroke, pos.end());
+        colorSpheres.erase(colorSpheres.begin() + getPrevStroke, colorSpheres.end());
+
+    }
     ImGui::End();
     imguiEndFrame();
   }
@@ -205,6 +221,7 @@ struct RayBrush : App {
     if(isImguiUsingInput()){
       return true;
     }
+
     Vec3d screenPos;
     screenPos.x = (m.x() * 1. / width()) * 2. - 1.;
     screenPos.y = ((height() - m.y()) * 1. / height()) * 2. - 1.;
@@ -214,7 +231,9 @@ struct RayBrush : App {
     Vec3f position = Vec3f(worldPos.x, worldPos.y, worldPos.z);
     //std::cout<<"postion = "<< position <<std::endl;
 
+    last_stroke_positions.push_back(pos.size()); //set the last stroke positon to start from here
     pos.push_back(position);
+    
 
 
     //trigger note on
