@@ -6,6 +6,7 @@ Interact with paintbrush using ray intersection tests, and draw 3D spheres that 
 
 */
 
+
 #include "al/app/al_App.hpp"
 #include "al/graphics/al_Shapes.hpp"
 #include "al/math/al_Random.hpp"
@@ -15,6 +16,7 @@ Interact with paintbrush using ray intersection tests, and draw 3D spheres that 
 #include "Gamma/Effects.h"
 #include "Gamma/Envelope.h"
 #include "Gamma/Oscillator.h"
+#include "Gamma/Domain.h"
 
 #include "al/scene/al_PolySynth.hpp"
 #include "al/scene/al_SynthSequencer.hpp"
@@ -22,6 +24,7 @@ Interact with paintbrush using ray intersection tests, and draw 3D spheres that 
 #include "al/ui/al_Parameter.hpp"
 #include "al/io/al_Window.hpp"
 #include "al/system/al_Time.hpp"
+#include "al/ui/al_PresetSequencer.hpp"
 
 
 #include <vector>
@@ -37,15 +40,19 @@ struct RayBrush : App {
   Light light;
   Mesh mMesh;
 
-  std::vector <Vec3f> pos;
-  std::vector <Color> colorSpheres;
+  std::vector <Vec3f> pos; // keeps position for where to draw each sphere
+  std::vector <Color> colorSpheres; //keeps track of color for each drawing stroke
+  std::vector <int> start_stroke_positions; // keeps track of where all the stroke positions start for the undo function 
   Color colorPicker{1, 1, 1};
   bool move_with_mouse = false;
-  bool loop = false;
-
-  std::vector <int> midiNotes; // keeps track of the notes for each stroke
-  std::vector <float> durations; // keeps track of the durations for each stroke
-  std::vector <int> start_stroke_positions; // keeps track of where all the stroke positions start for the undo function 
+  
+  
+  //for loop pedal
+  bool recordLoop = false;
+  bool playLoop = false;
+  std::vector <int> loopMidiNotes; // keeps track of the notes for each stroke for Loop Pedal
+  std::vector <double> loopDurations; // keeps track of the durations for each note in the loop Pedal
+  
 
   //variables for sound
   SynthGUIManager<Sound> synthManager{"Sound"};
@@ -55,9 +62,9 @@ struct RayBrush : App {
 
   void onCreate() override {
     //for graphics
-    nav().pos(0, 0, 80); //zoom in and out, higher z is out farther away
-    light.pos(0, 0, 80); // where the light is set
-    addSphere(mMesh, 0.4); 
+    nav().pos(0, 0, 100); //zoom in and out, higher z is out farther away
+    light.pos(0, 0, 100); // where the light is set
+    addSphere(mMesh, 0.2); 
     mMesh.generateNormals();
 
     //for sound
@@ -92,17 +99,12 @@ struct RayBrush : App {
     if (move_with_mouse) {
       navControl().useMouse(!isImguiUsingInput()); //allows screen to move with mouse
     }
-    ImGui::Checkbox("Turn on Loop", &loop); //turn on loop for note to keep repeating after being drawn 
-    if(loop){
-      double duration = durations.back(); //get duration
-      const float A4 = 220.f;
-      int noteToLoop = midiNotes.back();
-      //keep playing notes for a certain duration each time until loop is checked off
-      synthManager.voice()->setInternalParameterValue(
-            "frequency", ::pow(2.f, (noteToLoop - 69.f) / 12.f) * A4);
-      synthManager.triggerOn(noteToLoop);
-      synthManager.synthSequencer().addVoice(synthManager.voice(), 0.f, duration);
-    }
+    //3 settings Loop pedal: record, play, off
+    ImGui::RadioButton("Record Loop", recordLoop); //Spacebar is pressed and loop recording is turned on 
+    ImGui::RadioButton("Play Loop", playLoop); //Spacebar is pressed while recordLoop is true, recordLoop becomes 
+    // false and playLoop becomes true, looped recording is turned on
+    
+
 
     if (ImGui::Button("Clear Drawing")) {
         // Buttons return true when clicked
@@ -117,7 +119,6 @@ struct RayBrush : App {
         start_stroke_positions.pop_back();
         pos.erase(pos.begin() + getPrevStroke, pos.end());
         colorSpheres.erase(colorSpheres.begin() + getPrevStroke, colorSpheres.end());
-        midiNotes.pop_back(); //remove associated midinote
 
     }
     ImGui::End();
@@ -185,11 +186,11 @@ struct RayBrush : App {
     synthManager.voice()->setInternalParameterValue("y",m.y());
 
     // trigger note on
-    const float A4 = 220.f;
-    midiNote = (m.x()+m.y())%87 + 21; //(range from 21-108)
+    
+    midiNote = (m.x()+m.y())%40 + 60; //(range from 60-100)
     std::cout<<"Drawing midi note = "<< midiNote <<std::endl;
     //std::cout<<"currentSphereCount = "<< currentSphereCount <<std::endl;
-
+    const float A4 = 220.f;
     if (midiNote > 0) {
         synthManager.voice()->setInternalParameterValue(
             "frequency", ::pow(2.f, (midiNote - 69.f) / 12.f) * A4);
@@ -197,7 +198,9 @@ struct RayBrush : App {
       }
     Color sphereColor = colorPicker;
     colorSpheres.push_back(sphereColor);
-    midiNotes.push_back(midiNote);
+    if(recordLoop == true){
+      loopMidiNotes.push_back(midiNote);
+    }
     
     return true;
   }
@@ -224,15 +227,58 @@ struct RayBrush : App {
 
   bool onMouseUp(const Mouse &m) override {
     durationTimer.stop();
-    durations.push_back(durationTimer.elapsedSec());
     //trigger note off
     synthManager.triggerOff(midiNote);
+    if(recordLoop == true){
+      loopDurations.push_back(durationTimer.elapsedSec());
+    }
 
     return true;
   }
 
-  //use sequencncer->synthManager()
+
+
+  //for Loop Pedal Spacebar
+   bool onKeyDown(const Keyboard &k) override {
+     if( k.key() == ' ' && recordLoop == false && playLoop == false){ //start recording loop
+          //set recordLoop to true
+          recordLoop = true;
+     }
+      else if( k.key() == ' ' && recordLoop == true && playLoop == false){ //start playing recorded loop on repeat with sequencer 
+          playLoop = true;
+          recordLoop = false;
+          double start = 0.0;
+          for( int i = 0; i < loopMidiNotes.size(); i++){
+            //add notes to sequencer with their corresponding durations
+            std::cout<<"adding durations, notes " << start << " " <<loopDurations[i]<<std::endl;
+            sequencer().add<Sound>(start, loopDurations[i]).setInternalVals(loopMidiNotes[i]);
+            start = start +  loopDurations[i];
+          }
+          std::cout<<"about to play sequence  " <<std::endl;
+          sequencer().playSequence();
+          std::cout<<"finished playing sequence  " <<std::endl;
+      }else if(k.key() == ' ' && recordLoop == false && playLoop == true){
+        playLoop = false;
+        //stop playing recording, clear loopMidiNotes and loopDurations
+        sequencer().stopSequence();
+        //trigger off the recorded sequence 
+        loopDurations.clear();
+        loopMidiNotes.clear();
+        //clear the sequencer of all notes
+        sequencer().getSequenceList().clear();
+      }
+  
+    return true;
+  }
+  // A simple function to return a reference to the sequencer. This looks
+  // nicer than just using the internal variable.
+  SynthSequencer &sequencer() { return mSequencer; }
+
+
+  //use sequencncer->synthManager(), seq.synth().getVoice<InstrumentCelesta>() add voice 
   //count duration of mouse sequence and add duration with voice after to make chords
+private:
+    SynthSequencer mSequencer;
 };
 int main() {
   RayBrush app;
