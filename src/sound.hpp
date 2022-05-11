@@ -50,7 +50,7 @@ class Sound : public SynthVoice {
     // stored and aplied when a note is triggered.)
  
     //(default val, min, max)
- 
+    std::cout<<"creating voice " <<std::endl;
     createInternalTriggerParameter("amplitude", 0.3, 0.0, 1.0);
     createInternalTriggerParameter("frequency", 60, 20, 5000);
     createInternalTriggerParameter("attackTime", 1.0, 0.01, 3.0);

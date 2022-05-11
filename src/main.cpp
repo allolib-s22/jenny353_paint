@@ -5,7 +5,7 @@ Description:
 Interact with paintbrush using ray intersection tests, and draw 3D spheres that are mapped sonically to 2D coordinates
 
 */
-
+#include <stdlib.h> 
 
 #include "al/app/al_App.hpp"
 #include "al/graphics/al_Shapes.hpp"
@@ -56,6 +56,7 @@ struct RayBrush : App {
 
   //variables for sound
   SynthGUIManager<Sound> synthManager{"Sound"};
+  SynthGUIManager<Sound> synthManager1{"Sound1"};
   int midiNote = 0;
   float frequency = 0;
   Timer durationTimer;
@@ -68,6 +69,7 @@ struct RayBrush : App {
     mMesh.generateNormals();
 
     //for sound
+
     // disable nav control mouse drag to look
     navControl().useMouse(false);
 
@@ -75,11 +77,21 @@ struct RayBrush : App {
     gam::sampleRate(audioIO().framesPerSecond());
     imguiInit();
     synthManager.synthRecorder().verbose(true);
+    synthManager.synthSequencer().verbose(true);
+    synthManager1.synthRecorder().verbose(true);
+    synthManager1.synthSequencer().verbose(true);
+
+    synthManager.synthSequencer().setDirectory("Sound-data");
+    synthManager1.synthSequencer().setDirectory("Sound-data");
+
+   
   }
+
 
   // The audio callback function. Called when audio hardware requires data
   void onSound(AudioIOData& io) override {
     synthManager.render(io);  // Render audio
+    synthManager1.render(io);  // Render audio
   }
 
   void onAnimate(double dt) override {
@@ -92,6 +104,7 @@ struct RayBrush : App {
     ImGui::Begin("my window");
     // Draw a window that contains the synth control panel
     synthManager.drawSynthControlPanel();
+    synthManager1.drawSynthControlPanel();
     
     // Edit 3 floats representing a color
     ImGui::ColorEdit3("Color", colorPicker.components);
@@ -100,10 +113,11 @@ struct RayBrush : App {
       navControl().useMouse(!isImguiUsingInput()); //allows screen to move with mouse
     }
     //3 settings Loop pedal: record, play, off
-    ImGui::RadioButton("Record Loop", recordLoop); //Spacebar is pressed and loop recording is turned on 
-    ImGui::RadioButton("Play Loop", playLoop); //Spacebar is pressed while recordLoop is true, recordLoop becomes 
+    //ImGui::RadioButton("Record Loop", recordLoop); //Spacebar is pressed and loop recording is turned on 
+    //ImGui::RadioButton("Play Loop", playLoop); //Spacebar is pressed while recordLoop is true, recordLoop becomes 
     // false and playLoop becomes true, looped recording is turned on
-    
+    ImGui::Checkbox("Record Loop", &recordLoop);
+    ImGui::Checkbox("Play Loop", &playLoop);
 
 
     if (ImGui::Button("Clear Drawing")) {
@@ -143,6 +157,8 @@ struct RayBrush : App {
     }
     // Render the synth's graphics
     synthManager.render(g);
+    synthManager1.render(g);
+    //sequencer().render(g); // render sequencer graphics
     // GUI is drawn here
     imguiDraw();
     //change z coord with gui
@@ -243,29 +259,43 @@ struct RayBrush : App {
      if( k.key() == ' ' && recordLoop == false && playLoop == false){ //start recording loop
           //set recordLoop to true
           recordLoop = true;
+          int sequenceNum = 0;
+          std::string sequenceName = "sound" + std::to_string(sequenceNum);
+          std::cout<<"sequenceName " << sequenceName <<std::endl;
+
+          synthManager.synthRecorder().startRecord(sequenceName, true);
      }
       else if( k.key() == ' ' && recordLoop == true && playLoop == false){ //start playing recorded loop on repeat with sequencer 
+          synthManager.synthRecorder().stopRecord();
+          const float A4 = 220.f;
           playLoop = true;
           recordLoop = false;
-          double start = 0.0;
-          for( int i = 0; i < loopMidiNotes.size(); i++){
-            //add notes to sequencer with their corresponding durations
-            std::cout<<"adding durations, notes " << start << " " <<loopDurations[i]<<std::endl;
-            sequencer().add<Sound>(start, loopDurations[i]).setInternalVals(loopMidiNotes[i]);
-            start = start +  loopDurations[i];
-          }
-          std::cout<<"about to play sequence  " <<std::endl;
-          sequencer().playSequence();
-          std::cout<<"finished playing sequence  " <<std::endl;
+          // SynthVoice* voice;
+          
+          //       float start = 0.0f;
+          //       for( int i = 0; i < loopMidiNotes.size(); i++){
+          //         //add notes to sequencer with their corresponding durations
+          //         std::cout<<"add to sequencer: start, durations " << start << " " <<loopDurations[i]<<std::endl;
+          //         voice = sequencer().synth().getVoice<Sound>(); //gets a free voice in the sequencer
+          //         voice->setInternalParameterValue("frequency", ::pow(2.f, (loopMidiNotes[i] - 69.f) / 12.f) * A4);
+          //         sequencer().addVoice(voice, start, loopDurations[i]);
+          //         start = start + loopDurations[i];
+          //       }
+          int sequenceNum = 0;
+          std::string sequenceName = "sound" + std::to_string(sequenceNum);
+          std::cout<<"play sequence: " << sequenceName <<std::endl;
+          synthManager1.synthSequencer().playSequence(sequenceName + ".synthSequence");
+
+          
       }else if(k.key() == ' ' && recordLoop == false && playLoop == true){
         playLoop = false;
         //stop playing recording, clear loopMidiNotes and loopDurations
-        sequencer().stopSequence();
+        synthManager1.synthSequencer().stopSequence();
         //trigger off the recorded sequence 
         loopDurations.clear();
         loopMidiNotes.clear();
         //clear the sequencer of all notes
-        sequencer().getSequenceList().clear();
+        //sequencer().getSequenceList().clear();
       }
   
     return true;
@@ -273,15 +303,12 @@ struct RayBrush : App {
   // A simple function to return a reference to the sequencer. This looks
   // nicer than just using the internal variable.
   SynthSequencer &sequencer() { return mSequencer; }
-
-
-  //use sequencncer->synthManager(), seq.synth().getVoice<InstrumentCelesta>() add voice 
-  //count duration of mouse sequence and add duration with voice after to make chords
 private:
     SynthSequencer mSequencer;
 };
 int main() {
   RayBrush app;
+  app.configureAudio(48000., 512, 2, 0);
   app.start();
   return 0;
 }
