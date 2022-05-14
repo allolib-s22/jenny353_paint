@@ -82,7 +82,11 @@ struct RayBrush : App {
     synthManager1.synthSequencer().verbose(true);
 
     synthManager.synthSequencer().setDirectory("Sound-data");
-    synthManager1.synthSequencer().setDirectory("Sound-data");
+    synthManager1.synthSequencer().setDirectory("Sound-data"); //plays recorded loop 
+
+    synthManager1.synthSequencer().synth().allocatePolyphony<Sound>(16);
+    synthManager1.synthSequencer().synth().registerSynthClass<Sound>("Sound");
+
 
    
   }
@@ -164,6 +168,14 @@ struct RayBrush : App {
     //change z coord with gui
     nav().pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); //zoom in and out, higher z is out farther away
     light.pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); // where the light is set
+
+    if(!synthManager1.synthSequencer().playing() && playLoop){
+        synthManager1.synthSequencer().print();
+        int sequenceNum = 0;
+        std::string sequenceName = "sound" + std::to_string(sequenceNum);
+        std::cout<<"play sequence: " << sequenceName <<std::endl;
+        synthManager1.synthSequencer().playSequence(sequenceName + ".synthSequence");
+    }
   }
 
   Vec3d unproject(Vec3d screenPos) {
@@ -176,6 +188,7 @@ struct RayBrush : App {
 
 
   bool onMouseDown(const Mouse &m) override {
+    std::cout<<"Mouse Down"<< std::endl;
     // if mouse clicks on image gui, do not draw!!!
     if(isImguiUsingInput()){
       return true;
@@ -242,6 +255,7 @@ struct RayBrush : App {
   }
 
   bool onMouseUp(const Mouse &m) override {
+    std::cout<<"Mouse Up Trigger off: "<< midiNote<< std::endl;
     durationTimer.stop();
     //trigger note off
     synthManager.triggerOff(midiNote);
@@ -253,6 +267,20 @@ struct RayBrush : App {
   }
 
 
+  // void loop_note() {
+  //   const float A4 = 220.f;
+  //   float start = 0.0f;
+  //       for( int i = 0; i < loopMidiNotes.size(); i++){
+  //           std::cout<<"add to sequencer: start, durations " << start << " " <<loopDurations[i]<<std::endl;
+  //           auto *voice = sequencer().synth().getVoice<Sound>(); //gets a free voice in the sequencer
+  //           synthManager.configureVoiceFromGui(voice);
+  //           voice->setInternalParameterValue("frequency", ::pow(2.f, (loopMidiNotes[i] - 69.f) / 12.f) * A4);
+  //           synthManager.synthSequencer().addVoiceFromNow(voice, start, loopDurations[i]);
+  //           start = start + loopDurations[i];
+
+  //           //add notes to sequencer with their corresponding durations
+  //       }
+  //   }
 
   //for Loop Pedal Spacebar
    bool onKeyDown(const Keyboard &k) override {
@@ -261,41 +289,29 @@ struct RayBrush : App {
           recordLoop = true;
           int sequenceNum = 0;
           std::string sequenceName = "sound" + std::to_string(sequenceNum);
-          std::cout<<"sequenceName " << sequenceName <<std::endl;
+          std::cout<<"start recording in file: sequenceName " << sequenceName <<std::endl;
 
           synthManager.synthRecorder().startRecord(sequenceName, true);
      }
       else if( k.key() == ' ' && recordLoop == true && playLoop == false){ //start playing recorded loop on repeat with sequencer 
+          std::cout<<"stop recording " <<std::endl;
           synthManager.synthRecorder().stopRecord();
           const float A4 = 220.f;
           playLoop = true;
           recordLoop = false;
-          // SynthVoice* voice;
-          
-          //       float start = 0.0f;
-          //       for( int i = 0; i < loopMidiNotes.size(); i++){
-          //         //add notes to sequencer with their corresponding durations
-          //         std::cout<<"add to sequencer: start, durations " << start << " " <<loopDurations[i]<<std::endl;
-          //         voice = sequencer().synth().getVoice<Sound>(); //gets a free voice in the sequencer
-          //         voice->setInternalParameterValue("frequency", ::pow(2.f, (loopMidiNotes[i] - 69.f) / 12.f) * A4);
-          //         sequencer().addVoice(voice, start, loopDurations[i]);
-          //         start = start + loopDurations[i];
-          //       }
           int sequenceNum = 0;
           std::string sequenceName = "sound" + std::to_string(sequenceNum);
           std::cout<<"play sequence: " << sequenceName <<std::endl;
           synthManager1.synthSequencer().playSequence(sequenceName + ".synthSequence");
-
           
       }else if(k.key() == ' ' && recordLoop == false && playLoop == true){
         playLoop = false;
         //stop playing recording, clear loopMidiNotes and loopDurations
         synthManager1.synthSequencer().stopSequence();
+        synthManager1.synth().allNotesOff();
         //trigger off the recorded sequence 
         loopDurations.clear();
         loopMidiNotes.clear();
-        //clear the sequencer of all notes
-        //sequencer().getSequenceList().clear();
       }
   
     return true;
@@ -308,6 +324,8 @@ private:
 };
 int main() {
   RayBrush app;
+  // Set window size
+  app.dimensions(1200, 600);
   app.configureAudio(48000., 512, 2, 0);
   app.start();
   return 0;

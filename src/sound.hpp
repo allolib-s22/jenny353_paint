@@ -94,11 +94,6 @@ class Sound : public SynthVoice {
 
   void onTriggerOff() override { mAmpEnv.release(); }
 
-  void setInternalVals(int midiNote) {
-    std::cout<<"set freq " <<std::endl;
-    const float A4 = 220.f;
-    setInternalParameterValue("frequency", ::pow(2.f, (midiNote - 69.f) / 12.f) * A4);
-  }
 
 
 };
