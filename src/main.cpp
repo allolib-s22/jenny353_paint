@@ -169,7 +169,7 @@ struct RayBrush : App {
     nav().pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); //zoom in and out, higher z is out farther away
     light.pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); // where the light is set
 
-    if(!synthManager1.synthSequencer().playing() && playLoop){
+    if(!synthManager1.synthSequencer().playing() && playLoop){ // keeps looping if playLoop is on
         synthManager1.synthSequencer().print();
         int sequenceNum = 0;
         std::string sequenceName = "sound" + std::to_string(sequenceNum);
@@ -215,8 +215,13 @@ struct RayBrush : App {
     synthManager.voice()->setInternalParameterValue("y",m.y());
 
     // trigger note on
-    
-    midiNote = (m.x()+m.y())%40 + 60; //(range from 60-100)
+    //mouse origin is upper left corner (0,0) -> (800,800)  = possible x+y = 0-1600
+    //note mapping: lower left is midi notes 60-70, lower right is 70-80, upper left is 80-90, upper right is 90-100
+    //std::cout<<"m.x " << m.x() <<std::endl;
+    //std::cout<<"m.y " <<800-m.y() <<std::endl;
+    midiNote = (m.x() + (800-m.y()))/40 + 65; //(range from 65-105)
+
+
     std::cout<<"Drawing midi note = "<< midiNote <<std::endl;
     //std::cout<<"currentSphereCount = "<< currentSphereCount <<std::endl;
     const float A4 = 220.f;
@@ -325,7 +330,7 @@ private:
 int main() {
   RayBrush app;
   // Set window size
-  app.dimensions(1200, 600);
+  app.dimensions(800, 800);
   app.configureAudio(48000., 512, 2, 0);
   app.start();
   return 0;
