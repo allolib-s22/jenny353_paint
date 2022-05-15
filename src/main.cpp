@@ -45,18 +45,16 @@ struct RayBrush : App {
   std::vector <int> start_stroke_positions; // keeps track of where all the stroke positions start for the undo function 
   Color colorPicker{1, 1, 1};
   bool move_with_mouse = false;
+  int sequenceFileNum = 0;
   
   
   //for loop pedal
   bool recordLoop = false;
   bool playLoop = false;
-  std::vector <int> loopMidiNotes; // keeps track of the notes for each stroke for Loop Pedal
-  std::vector <double> loopDurations; // keeps track of the durations for each note in the loop Pedal
   
 
   //variables for sound
   SynthGUIManager<Sound> synthManager{"Sound"};
-  SynthGUIManager<Sound> synthManager1{"Sound1"};
   int midiNote = 0;
   float frequency = 0;
   Timer durationTimer;
@@ -78,24 +76,18 @@ struct RayBrush : App {
     imguiInit();
     synthManager.synthRecorder().verbose(true);
     synthManager.synthSequencer().verbose(true);
-    synthManager1.synthRecorder().verbose(true);
-    synthManager1.synthSequencer().verbose(true);
 
     synthManager.synthSequencer().setDirectory("Sound-data");
-    synthManager1.synthSequencer().setDirectory("Sound-data"); //plays recorded loop 
 
-    synthManager1.synthSequencer().synth().allocatePolyphony<Sound>(16);
-    synthManager1.synthSequencer().synth().registerSynthClass<Sound>("Sound");
+   //  synthManager.synthSequencer().synth().allocatePolyphony<Sound>(16);
+   // synthManager.synthSequencer().synth().registerSynthClass<Sound>("Sound");
 
-
-   
   }
 
 
   // The audio callback function. Called when audio hardware requires data
   void onSound(AudioIOData& io) override {
     synthManager.render(io);  // Render audio
-    synthManager1.render(io);  // Render audio
   }
 
   void onAnimate(double dt) override {
@@ -108,7 +100,6 @@ struct RayBrush : App {
     ImGui::Begin("my window");
     // Draw a window that contains the synth control panel
     synthManager.drawSynthControlPanel();
-    synthManager1.drawSynthControlPanel();
     
     // Edit 3 floats representing a color
     ImGui::ColorEdit3("Color", colorPicker.components);
@@ -161,7 +152,6 @@ struct RayBrush : App {
     }
     // Render the synth's graphics
     synthManager.render(g);
-    synthManager1.render(g);
     //sequencer().render(g); // render sequencer graphics
     // GUI is drawn here
     imguiDraw();
@@ -169,12 +159,10 @@ struct RayBrush : App {
     nav().pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); //zoom in and out, higher z is out farther away
     light.pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); // where the light is set
 
-    if(!synthManager1.synthSequencer().playing() && playLoop){ // keeps looping if playLoop is on
-        synthManager1.synthSequencer().print();
-        int sequenceNum = 0;
-        std::string sequenceName = "sound" + std::to_string(sequenceNum);
+    if(!synthManager.synthSequencer().playing() && playLoop == true ){ // keeps looping if playLoop is on
+        std::string sequenceName = "sound" + std::to_string(sequenceFileNum-1); //loop prev file 
         std::cout<<"play sequence: " << sequenceName <<std::endl;
-        synthManager1.synthSequencer().playSequence(sequenceName + ".synthSequence");
+        synthManager.synthSequencer().playSequence(sequenceName + ".synthSequence");
     }
   }
 
@@ -215,11 +203,11 @@ struct RayBrush : App {
     synthManager.voice()->setInternalParameterValue("y",m.y());
 
     // trigger note on
-    //mouse origin is upper left corner (0,0) -> (800,800)  = possible x+y = 0-1600
+    //mouse origin is upper left corner (0,0) -> (1200,800)  = possible x+y = 0-1600
     //note mapping: lower left is midi notes 60-70, lower right is 70-80, upper left is 80-90, upper right is 90-100
-    //std::cout<<"m.x " << m.x() <<std::endl;
-    //std::cout<<"m.y " <<800-m.y() <<std::endl;
-    midiNote = (m.x() + (800-m.y()))/40 + 65; //(range from 65-105)
+    std::cout<<"m.x " << m.x() <<std::endl;
+    std::cout<<"m.y " <<800-m.y() <<std::endl;
+    midiNote = (m.x() + (800-m.y()))/50 + 65; //(range from 65-105)
 
 
     std::cout<<"Drawing midi note = "<< midiNote <<std::endl;
@@ -232,9 +220,6 @@ struct RayBrush : App {
       }
     Color sphereColor = colorPicker;
     colorSpheres.push_back(sphereColor);
-    if(recordLoop == true){
-      loopMidiNotes.push_back(midiNote);
-    }
     
     return true;
   }
@@ -264,73 +249,55 @@ struct RayBrush : App {
     durationTimer.stop();
     //trigger note off
     synthManager.triggerOff(midiNote);
-    if(recordLoop == true){
-      loopDurations.push_back(durationTimer.elapsedSec());
-    }
 
     return true;
   }
 
 
-  // void loop_note() {
-  //   const float A4 = 220.f;
-  //   float start = 0.0f;
-  //       for( int i = 0; i < loopMidiNotes.size(); i++){
-  //           std::cout<<"add to sequencer: start, durations " << start << " " <<loopDurations[i]<<std::endl;
-  //           auto *voice = sequencer().synth().getVoice<Sound>(); //gets a free voice in the sequencer
-  //           synthManager.configureVoiceFromGui(voice);
-  //           voice->setInternalParameterValue("frequency", ::pow(2.f, (loopMidiNotes[i] - 69.f) / 12.f) * A4);
-  //           synthManager.synthSequencer().addVoiceFromNow(voice, start, loopDurations[i]);
-  //           start = start + loopDurations[i];
-
-  //           //add notes to sequencer with their corresponding durations
-  //       }
-  //   }
-
   //for Loop Pedal Spacebar
    bool onKeyDown(const Keyboard &k) override {
-     if( k.key() == ' ' && recordLoop == false && playLoop == false){ //start recording loop
+     if( k.key() == ' ' && recordLoop == false ){ //start recording loop
           //set recordLoop to true
           recordLoop = true;
-          int sequenceNum = 0;
-          std::string sequenceName = "sound" + std::to_string(sequenceNum);
+          
+          std::string sequenceName = "sound" + std::to_string(sequenceFileNum);
           std::cout<<"start recording in file: sequenceName " << sequenceName <<std::endl;
 
           synthManager.synthRecorder().startRecord(sequenceName, true);
+          
      }
-      else if( k.key() == ' ' && recordLoop == true && playLoop == false){ //start playing recorded loop on repeat with sequencer 
+      else if( k.key() == ' ' && recordLoop == true ){ //start playing recorded loop on repeat with sequencer 
           std::cout<<"stop recording " <<std::endl;
           synthManager.synthRecorder().stopRecord();
+          
           const float A4 = 220.f;
           playLoop = true;
           recordLoop = false;
-          int sequenceNum = 0;
-          std::string sequenceName = "sound" + std::to_string(sequenceNum);
+          std::string sequenceName = "sound" + std::to_string(sequenceFileNum);
           std::cout<<"play sequence: " << sequenceName <<std::endl;
-          synthManager1.synthSequencer().playSequence(sequenceName + ".synthSequence");
+          synthManager.synth().allNotesOff();
+          synthManager.synthSequencer().playSequence(sequenceName + ".synthSequence");
+          sequenceFileNum++;
           
-      }else if(k.key() == ' ' && recordLoop == false && playLoop == true){
+      } else if(k.shift() ){
+        std::cout<<"shift pressed, all notes off " <<std::endl;
+        //press delete all notes off
+        //stop playing recording
+        synthManager.synthSequencer().stopSequence();
+        synthManager.synth().allNotesOff();
         playLoop = false;
-        //stop playing recording, clear loopMidiNotes and loopDurations
-        synthManager1.synthSequencer().stopSequence();
-        synthManager1.synth().allNotesOff();
         //trigger off the recorded sequence 
-        loopDurations.clear();
-        loopMidiNotes.clear();
+  
       }
   
     return true;
   }
-  // A simple function to return a reference to the sequencer. This looks
-  // nicer than just using the internal variable.
-  SynthSequencer &sequencer() { return mSequencer; }
-private:
-    SynthSequencer mSequencer;
+
 };
 int main() {
   RayBrush app;
   // Set window size
-  app.dimensions(800, 800);
+  app.dimensions(1200, 800);
   app.configureAudio(48000., 512, 2, 0);
   app.start();
   return 0;
