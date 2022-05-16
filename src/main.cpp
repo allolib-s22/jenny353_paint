@@ -275,8 +275,6 @@ struct RayBrush : App {
           recordLoop = false;
           std::string sequenceName = "sound" + std::to_string(sequenceFileNum);
           std::cout<<"play sequence: " << sequenceName <<std::endl;
-          synthManager.synth().allNotesOff();
-          synthManager.synthSequencer().playSequence(sequenceName + ".synthSequence");
           sequenceFileNum++;
           
       } else if(k.shift() ){
