@@ -1,8 +1,5 @@
-@ 0 0.501317 Sound 0.3 391.995 1 1 0 441 496 80 
-@ 0.512004 0.501336 Sound 0.3 391.995 1 1 0 441 496 80 
-@ 1.03466 0.682696 Sound 0.3 311.127 1 1 0 255 509 80 
-@ 1.38668 0.383978 Sound 0.3 830.609 1 1 0 713 131 80 
-@ 1.57183 0.699822 Sound 0.3 466.164 1 1 0 417 352 80 
-@ 2.44267 0.501328 Sound 0.3 391.995 1 1 0 441 496 80 
-#  amplitude frequency attackTime releaseTime pan x y z 
+@ 0 0.249008 Sound 0.3 349.228 1 1 0 78 258 80 
+@ 0.981295 0.201833 Sound 0.3 369.994 1 1 0 116 235 80 
+@ 2.23333 0.148111 Sound 0.3 415.305 1 1 0 147 188 80 
 # Sound amplitude frequency attackTime releaseTime pan x y z 
+#  amplitude frequency attackTime releaseTime pan x y z 

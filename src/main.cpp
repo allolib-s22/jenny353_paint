@@ -79,8 +79,6 @@ struct RayBrush : App {
 
     synthManager.synthSequencer().setDirectory("Sound-data");
 
-   //  synthManager.synthSequencer().synth().allocatePolyphony<Sound>(16);
-   // synthManager.synthSequencer().synth().registerSynthClass<Sound>("Sound");
 
   }
 
@@ -152,7 +150,6 @@ struct RayBrush : App {
     }
     // Render the synth's graphics
     synthManager.render(g);
-    //sequencer().render(g); // render sequencer graphics
     // GUI is drawn here
     imguiDraw();
     //change z coord with gui
@@ -191,7 +188,6 @@ struct RayBrush : App {
     Vec3d worldPos = unproject(screenPos);
     //add a sphere to plane
     Vec3f position = Vec3f(worldPos.x, worldPos.y, worldPos.z);
-    //std::cout<<"postion = "<< position <<std::endl;
 
     start_stroke_positions.push_back(pos.size()); //set the last stroke positon to start from here
     pos.push_back(position);
@@ -202,16 +198,14 @@ struct RayBrush : App {
     synthManager.voice()->setInternalParameterValue("x",m.x());
     synthManager.voice()->setInternalParameterValue("y",m.y());
 
-    // trigger note on
-    //mouse origin is upper left corner (0,0) -> (1200,800)  = possible x+y = 0-1600
-    //note mapping: lower left is midi notes 60-70, lower right is 70-80, upper left is 80-90, upper right is 90-100
+    //mouse origin is upper left corner (0,0) -> (1200,800)
+    //note mapping: lower left is lower freq, higher and up to right gives higher freq
     std::cout<<"m.x " << m.x() <<std::endl;
     std::cout<<"m.y " <<800-m.y() <<std::endl;
     midiNote = (m.x() + (800-m.y()))/50 + 65; //(range from 65-105)
 
 
     std::cout<<"Drawing midi note = "<< midiNote <<std::endl;
-    //std::cout<<"currentSphereCount = "<< currentSphereCount <<std::endl;
     const float A4 = 220.f;
     if (midiNote > 0) {
         synthManager.voice()->setInternalParameterValue(
@@ -278,13 +272,11 @@ struct RayBrush : App {
           sequenceFileNum++;
           
       } else if(k.shift() ){
-        std::cout<<"shift pressed, all notes off " <<std::endl;
-        //press delete all notes off
-        //stop playing recording
-        synthManager.synthSequencer().stopSequence();
-        synthManager.synth().allNotesOff();
+        std::cout<<"shift pressed, end song " <<std::endl;
+        //current sequence should finish and stop looping
+        //synthManager.synthSequencer().stopSequence();
+        //synthManager.synth().allNotesOff();
         playLoop = false;
-        //trigger off the recorded sequence 
   
       }
   
