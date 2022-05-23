@@ -33,7 +33,7 @@ Interact with paintbrush using ray intersection tests, and draw 3D spheres that 
 using namespace al;
 
 
-struct RayBrush : App {
+struct MusicBrush : App {
 
   //variables for graphics
   Material material;
@@ -43,7 +43,7 @@ struct RayBrush : App {
   std::vector <Vec3f> pos; // keeps position for where to draw each sphere
   std::vector <Color> colorSpheres; //keeps track of color for each drawing stroke
   std::vector <int> start_stroke_positions; // keeps track of where all the stroke positions start for the undo function 
-  Color colorPicker{1, 1, 1};
+  Color colorPicker{1.f, 1.f, 1.f, 1.f};
   bool move_with_mouse = false;
   int sequenceFileNum = 0;
   
@@ -99,8 +99,8 @@ struct RayBrush : App {
     // Draw a window that contains the synth control panel
     synthManager.drawSynthControlPanel();
     
-    // Edit 3 floats representing a color
-    ImGui::ColorEdit3("Color", colorPicker.components);
+    // Edit 4 floats representing a color , r g b a
+    ImGui::ColorEdit4("Color", colorPicker.components);
     ImGui::Checkbox("Move With Mouse", &move_with_mouse);
     if (move_with_mouse) {
       navControl().useMouse(!isImguiUsingInput()); //allows screen to move with mouse
@@ -285,7 +285,7 @@ struct RayBrush : App {
 
 };
 int main() {
-  RayBrush app;
+  MusicBrush app;
   // Set window size
   app.dimensions(1200, 800);
   app.configureAudio(48000., 512, 2, 0);
