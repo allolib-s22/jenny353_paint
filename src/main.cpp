@@ -2,7 +2,8 @@
 Allocore 
 
 Description:
-Interact with paintbrush using ray intersection tests, and draw 3D spheres that are mapped sonically to 2D coordinates
+Uses mouse as a paintbrush to draw 3D spheres that are mapped sonically using 2D coordinates.
+
 
 */
 #include <stdlib.h> 
@@ -29,6 +30,7 @@ Interact with paintbrush using ray intersection tests, and draw 3D spheres that 
 
 #include <vector>
 #include "sound.hpp"
+#include "subsound.hpp"
 
 using namespace al;
 
@@ -54,7 +56,7 @@ struct MusicBrush : App {
   
 
   //variables for sound
-  SynthGUIManager<Sound> synthManager{"Sound"};
+  SynthGUIManager<Sub> synthManager{"Sub"};
   int midiNote = 0;
   float frequency = 0;
   Timer durationTimer;
@@ -137,7 +139,7 @@ struct MusicBrush : App {
     g.clear(0);
     gl::depthTesting(true);
     g.lighting(true);
-    //std::cout<<"in onDraw "<< " pos[0]: "<< pos[0] <<std::endl;
+    
     //draw and color spheres 
     for (int i = 0; i < pos.size(); i++) {
       //std::cout<<"in onDraw, i = " << i << " pos: "<< pos[i] << "color = " <<colorSpheres[i].y<<std::endl;
@@ -173,11 +175,13 @@ struct MusicBrush : App {
 
 
   bool onMouseDown(const Mouse &m) override {
-    std::cout<<"Mouse Down"<< std::endl;
     // if mouse clicks on image gui, do not draw!!!
-    if(isImguiUsingInput()){
+     if(isImguiUsingInput()){
       return true;
     }
+    std::cout<<"Mouse Down"<< std::endl;
+    
+   
     //start duration timer
     durationTimer.start();
 
@@ -191,6 +195,16 @@ struct MusicBrush : App {
 
     start_stroke_positions.push_back(pos.size()); //set the last stroke positon to start from here
     pos.push_back(position);
+
+
+    Color sphereColor = colorPicker;
+    colorSpheres.push_back(sphereColor);
+
+    // use color to change timbre
+    std::cout<<"sphereColor.a = "<< sphereColor.a <<std::endl; 
+    float timbre = (sphereColor.a); 
+    std::cout<<"Timbre = "<< timbre <<std::endl;   
+    updateTimbre(timbre);
 
 
     //trigger note on
@@ -212,12 +226,29 @@ struct MusicBrush : App {
             "frequency", ::pow(2.f, (midiNote - 69.f) / 12.f) * A4);
         synthManager.triggerOn(midiNote);
       }
-    Color sphereColor = colorPicker;
-    colorSpheres.push_back(sphereColor);
+
     
     return true;
   }
+
+  void updateTimbre(float timbre){
+      std::cout<<"cf1 = "<< synthManager.voice()->getInternalParameterValue("cf1") <<std::endl; 
+      synthManager.voice()->setInternalParameterValue("cf1", 
+        synthManager.voice()->getInternalParameterValue("cf1") * timbre);
+      std::cout<<"cf1 = "<< synthManager.voice()->getInternalParameterValue("cf1") <<std::endl;  
+      synthManager.voice()->setInternalParameterValue("cf2", 
+        synthManager.voice()->getInternalParameterValue("cf2") * timbre);
+      synthManager.voice()->setInternalParameterValue("cf3", 
+        synthManager.voice()->getInternalParameterValue("cf4") * timbre);
+      synthManager.voice()->setInternalParameterValue("bw1", 
+        synthManager.voice()->getInternalParameterValue("bw1") * timbre);
+      synthManager.voice()->setInternalParameterValue("bw2", 
+        synthManager.voice()->getInternalParameterValue("bw2") * timbre);
+
+  }
+
   bool onMouseDrag(const Mouse &m) override {
+    //std::cout<<"Mouse Drag " <<std::endl;
     // if mouse drags on image gui, do not draw!!!
     if(isImguiUsingInput()){
       return true;
@@ -239,10 +270,19 @@ struct MusicBrush : App {
   }
 
   bool onMouseUp(const Mouse &m) override {
+    if(isImguiUsingInput()){
+      return true;
+    }
+
     std::cout<<"Mouse Up Trigger off: "<< midiNote<< std::endl;
     durationTimer.stop();
     //trigger note off
     synthManager.triggerOff(midiNote);
+    
+    //change timbre back
+    Color sphereColor = colorPicker;
+    float original_timbre = 1.0/(sphereColor.a); 
+    updateTimbre(original_timbre);
 
     return true;
   }
