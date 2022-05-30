@@ -1,1 +1,9 @@
-#  amplitude frequency attackTime releaseTime sustain curve noise envDur cf1 cf2 cfRise bw1 bw2 bwRise hmnum hmamp pan 
+@ 0 1.96372 Sub 0.3 349.228 0.1 0.5 0.7 4 0 1 1313.73 1313.73 1 1313.73 1313.73 1 10 0.5 0 0.921569 0.027451 0.027451 0.52549 -20.1605 -6.22898 -661.631 -561.644 665 
+@ 3.95428 0.93867 Sub 0.3 277.183 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 -27.8676 -10.7853 -20.0033 80 0 
+@ 5.1484 0.849962 Sub 0.3 369.994 0.1 0.5 0.7 4 0 1 823.529 823.529 1 823.529 823.529 1 10 0.5 0 0.921569 0.027451 0.027451 0.329412 -16.2757 -7.16668 -661.631 -561.644 776 
+@ 8.8817 2.18327 Sub 0.3 349.228 0.1 0.5 0.7 4 0 1 500 500 1 500 500 1 10 0.5 0 0.921569 0.027451 0.027451 0.2 -17.0125 -6.56388 -661.631 -561.644 827 
+@ 5.38367 5.91993 Sub 0.3 391.995 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 -9.31155 -10.1824 -20.0033 80 49 
+@ 11.3249 0.938701 Sub 0.3 277.183 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 -27.8676 -10.7853 -20.0033 80 0 
+@ 14.9486 1.48376 Sub 0.3 369.994 0.1 0.5 0.7 4 0 1 137.255 137.255 1 137.255 137.255 1 10 0.5 0 0.921569 0.027451 0.027451 0.054902 -17.5483 -4.08568 -661.631 -561.644 949 
+# Sub amplitude frequency attackTime releaseTime sustain curve noise envDur cf1 cf2 cfRise bw1 bw2 bwRise hmnum hmamp pan colorR colorG colorB colorA posX posY posZ z startPos 
+#  amplitude frequency attackTime releaseTime sustain curve noise envDur cf1 cf2 cfRise bw1 bw2 bwRise hmnum hmamp pan colorR colorG colorB colorA posX posY posZ z startPos 

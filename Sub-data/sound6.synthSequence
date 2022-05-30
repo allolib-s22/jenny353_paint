@@ -1,0 +1,4 @@
+@ 0 0.849992 Sub 0.3 349.228 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 -4.08636 -20.2978 -20.0033 80 436 
+@ 0.400865 0.885501 Sub 0.3 440 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 -0.669895 -9.5795 -20.0033 80 290 
+#  amplitude frequency attackTime releaseTime sustain curve noise envDur cf1 cf2 cfRise bw1 bw2 bwRise hmnum hmamp pan colorR colorG colorB colorA posX posY posZ z startPos 
+# Sub amplitude frequency attackTime releaseTime sustain curve noise envDur cf1 cf2 cfRise bw1 bw2 bwRise hmnum hmamp pan colorR colorG colorB colorA posX posY posZ z startPos 

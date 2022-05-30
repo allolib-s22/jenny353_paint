@@ -7,6 +7,9 @@ Uses mouse as a paintbrush to draw 3D spheres that are mapped sonically using 2D
 
 */
 #include <stdlib.h> 
+#include <iostream>
+#include <fstream>
+
 
 #include "al/app/al_App.hpp"
 #include "al/graphics/al_Shapes.hpp"
@@ -32,6 +35,7 @@ Uses mouse as a paintbrush to draw 3D spheres that are mapped sonically using 2D
 #include "sound.hpp"
 #include "subsound.hpp"
 
+
 using namespace al;
 
 
@@ -43,7 +47,6 @@ struct MusicBrush : App {
   Mesh mMesh;
 
   std::vector <Vec3f> pos; // keeps position for where to draw each sphere
-  std::vector <Color> colorSpheres; //keeps track of color for each drawing stroke
   std::vector <int> start_stroke_positions; // keeps track of where all the stroke positions start for the undo function 
   Color colorPicker{1.f, 1.f, 1.f, 1.f};
   bool move_with_mouse = false;
@@ -53,7 +56,6 @@ struct MusicBrush : App {
   //for loop pedal
   bool recordLoop = false;
   bool playLoop = false;
-  
 
   //variables for sound
   SynthGUIManager<Sub> synthManager{"Sub"};
@@ -63,15 +65,16 @@ struct MusicBrush : App {
 
   void onCreate() override {
     //for graphics
-    nav().pos(0, 0, 100); //zoom in and out, higher z is out farther away
+    nav().pos(0, 0, 100); 
     light.pos(0, 0, 100); // where the light is set
-    addSphere(mMesh, 0.2); 
-    mMesh.generateNormals();
 
-    //for sound
+    addSphere(mMesh, 0.2);
+    mMesh.generateNormals();
+    mMesh.smooth();
 
     // disable nav control mouse drag to look
     navControl().useMouse(false);
+
 
     // Set sampling rate for Gamma objects from app's audio
     gam::sampleRate(audioIO().framesPerSecond());
@@ -79,9 +82,8 @@ struct MusicBrush : App {
     synthManager.synthRecorder().verbose(true);
     synthManager.synthSequencer().verbose(true);
 
-    synthManager.synthSequencer().setDirectory("Sound-data");
-
-
+    synthManager.synthSequencer().setDirectory("Sub-data");
+  
   }
 
 
@@ -89,6 +91,7 @@ struct MusicBrush : App {
   void onSound(AudioIOData& io) override {
     synthManager.render(io);  // Render audio
   }
+
 
   void onAnimate(double dt) override {
     // The GUI is prepared here
@@ -119,7 +122,6 @@ struct MusicBrush : App {
         // Buttons return true when clicked
         // clears the screen
       pos.clear();
-      colorSpheres.clear(); 
     }
     if (ImGui::Button("Undo")) {
         // undoes the most recent stroke from last on mouse down
@@ -127,7 +129,6 @@ struct MusicBrush : App {
         int getPrevStroke = start_stroke_positions.back();
         start_stroke_positions.pop_back();
         pos.erase(pos.begin() + getPrevStroke, pos.end());
-        colorSpheres.erase(colorSpheres.begin() + getPrevStroke, colorSpheres.end());
 
     }
     ImGui::End();
@@ -135,34 +136,57 @@ struct MusicBrush : App {
   }
 
 
-  virtual void onDraw(Graphics &g) override {
-    g.clear(0);
+  virtual void onDraw(Graphics &g) override { 
+    g.clear();
     gl::depthTesting(true);
     g.lighting(true);
+    g.blending(true);
     
     //draw and color spheres 
-    for (int i = 0; i < pos.size(); i++) {
-      //std::cout<<"in onDraw, i = " << i << " pos: "<< pos[i] << "color = " <<colorSpheres[i].y<<std::endl;
-      g.pushMatrix();
-      g.translate(pos[i]);
-      //g.color(1, .87, .5);
-      g.color(colorSpheres[i]);
-      g.draw(mMesh);
-      g.popMatrix();
+
+
+    //load sequence, for each active voice, use getInternalParameterValue(startPos)
+        //for each active voice,  make this the start pos and draw the strokes that start there
+    auto *voices = synthManager.synthSequencer().synth().getActiveVoices();
+    while (voices) {
+      int startPos = voices->getInternalParameterValue("startPos");
+    
+    float red = voices->getInternalParameterValue("colorR");
+    float green = voices->getInternalParameterValue("colorG");
+    float blue = voices->getInternalParameterValue("colorB");
+    float alpha = voices->getInternalParameterValue("colorA");
+    Color colorSphere{red, green,blue,alpha};
+
+    int i = startPos;
+    //std::cout<<"pos.size()"<<pos.size()<<std::endl; 
+      while(i < pos.size() && pos.size() > startPos && !(pos[i].x == 0 && pos[i].y == 0  && pos[i].z == 0)){
+        //std::cout<<"in onDraw, i = " << i << " posx: "<< pos[i].x <<  " posy: "<< pos[i].y <<  " posz: "<< pos[i].z <<" color = " << colorSphere.r<<std::endl;
+        g.pushMatrix();
+        g.translate(pos[i]);
+        g.color(colorSphere);
+        g.draw(mMesh);
+        g.popMatrix();
+        i++;
     }
+            voices = voices->next;
+    }
+    
+    //
     // Render the synth's graphics
     synthManager.render(g);
     // GUI is drawn here
     imguiDraw();
     //change z coord with gui
+    std::cout<<"posZ: " << synthManager.voice()->getInternalParameterValue("z") <<std::endl;
     nav().pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); //zoom in and out, higher z is out farther away
-    light.pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); // where the light is set
+    
 
     if(!synthManager.synthSequencer().playing() && playLoop == true ){ // keeps looping if playLoop is on
         std::string sequenceName = "sound" + std::to_string(sequenceFileNum-1); //loop prev file 
         std::cout<<"play sequence: " << sequenceName <<std::endl;
-        synthManager.synthSequencer().playSequence(sequenceName + ".synthSequence");
-    }
+        synthManager.synthSequencer().playSequence(sequenceName + ".synthSequence"); 
+        }
+
   }
 
   Vec3d unproject(Vec3d screenPos) {
@@ -190,15 +214,23 @@ struct MusicBrush : App {
     screenPos.y = ((height() - m.y()) * 1. / height()) * 2. - 1.;
     screenPos.z = 1.;
     Vec3d worldPos = unproject(screenPos);
-    //add a sphere to plane
     Vec3f position = Vec3f(worldPos.x, worldPos.y, worldPos.z);
 
     start_stroke_positions.push_back(pos.size()); //set the last stroke positon to start from here
-    pos.push_back(position);
 
+    //pos.push_back(position); first sphere is drawn on onProcess
 
     Color sphereColor = colorPicker;
-    colorSpheres.push_back(sphereColor);
+
+    synthManager.voice()->setInternalParameterValue("posX",worldPos.x);
+    synthManager.voice()->setInternalParameterValue("posY",worldPos.y);
+    synthManager.voice()->setInternalParameterValue("posZ",worldPos.z);
+    synthManager.voice()->setInternalParameterValue("colorR",sphereColor.r);
+    synthManager.voice()->setInternalParameterValue("colorG",sphereColor.g);
+    synthManager.voice()->setInternalParameterValue("colorB",sphereColor.b);
+    synthManager.voice()->setInternalParameterValue("colorA",sphereColor.a);
+    synthManager.voice()->setInternalParameterValue("startPos",pos.size());
+
 
     // use color to change timbre
     std::cout<<"sphereColor.a = "<< sphereColor.a <<std::endl; 
@@ -208,14 +240,10 @@ struct MusicBrush : App {
 
 
     //trigger note on
-    //set x and y coord on gui
-    synthManager.voice()->setInternalParameterValue("x",m.x());
-    synthManager.voice()->setInternalParameterValue("y",m.y());
 
+    
     //mouse origin is upper left corner (0,0) -> (1200,800)
     //note mapping: lower left is lower freq, higher and up to right gives higher freq
-    std::cout<<"m.x " << m.x() <<std::endl;
-    std::cout<<"m.y " <<800-m.y() <<std::endl;
     midiNote = (m.x() + (800-m.y()))/50 + 65; //(range from 65-105)
 
 
@@ -232,10 +260,8 @@ struct MusicBrush : App {
   }
 
   void updateTimbre(float timbre){
-      std::cout<<"cf1 = "<< synthManager.voice()->getInternalParameterValue("cf1") <<std::endl; 
       synthManager.voice()->setInternalParameterValue("cf1", 
         synthManager.voice()->getInternalParameterValue("cf1") * timbre);
-      std::cout<<"cf1 = "<< synthManager.voice()->getInternalParameterValue("cf1") <<std::endl;  
       synthManager.voice()->setInternalParameterValue("cf2", 
         synthManager.voice()->getInternalParameterValue("cf2") * timbre);
       synthManager.voice()->setInternalParameterValue("cf3", 
@@ -264,8 +290,16 @@ struct MusicBrush : App {
 
     pos.push_back(position);
     Color sphereColor = colorPicker;
-    colorSpheres.push_back(sphereColor);
-  
+
+
+    synthManager.voice()->setInternalParameterValue("posX",worldPos.x);
+    synthManager.voice()->setInternalParameterValue("posY",worldPos.y);
+    synthManager.voice()->setInternalParameterValue("posZ",worldPos.z);
+    synthManager.voice()->setInternalParameterValue("colorR",sphereColor.r);
+    synthManager.voice()->setInternalParameterValue("colorG",sphereColor.g);
+    synthManager.voice()->setInternalParameterValue("colorB",sphereColor.b);
+    synthManager.voice()->setInternalParameterValue("colorA",sphereColor.a);
+
     return true;
   }
 
@@ -283,6 +317,9 @@ struct MusicBrush : App {
     Color sphereColor = colorPicker;
     float original_timbre = 1.0/(sphereColor.a); 
     updateTimbre(original_timbre);
+
+    Vec3f nullVal = Vec3f{0,0,0};
+    pos.push_back(nullVal); //to mark the end of the stroke drawing 
 
     return true;
   }

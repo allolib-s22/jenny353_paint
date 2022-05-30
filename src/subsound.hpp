@@ -33,7 +33,6 @@ public:
     gam::Env<2> mBWEnv;
     // Additional members
     Mesh mMesh;
-
     // Initialize voice. This function will nly be called once per voice
     void init() override {
         mAmpEnv.curve(0); // linear segments
@@ -43,12 +42,15 @@ public:
         mBWEnv.curve(0);
         mOsc.harmonics(12);
         // We have the mesh be a sphere
-        //addDisc(mMesh, 1.0, 30);
+        addSphere(mMesh, 0.2); 
+        mMesh.generateNormals();
+        mMesh.smooth();
+        
 
         createInternalTriggerParameter("amplitude", 0.3, 0.0, 1.0);
         createInternalTriggerParameter("frequency", 60, 20, 5000);
         createInternalTriggerParameter("attackTime", 0.1, 0.01, 3.0);
-        createInternalTriggerParameter("releaseTime", 1.0, 0.1, 10.0);
+        createInternalTriggerParameter("releaseTime", 0.5, 0.1, 10.0);
         createInternalTriggerParameter("sustain", 0.7, 0.0, 1.0);
         createInternalTriggerParameter("curve", 4.0, -10.0, 10.0);
         createInternalTriggerParameter("noise", 0.0, 0.0, 1.0);
@@ -63,9 +65,43 @@ public:
         createInternalTriggerParameter("hmamp", 0.5, 0.0, 1.0);
         createInternalTriggerParameter("pan", 0.0, -1.0, 1.0);
 
+        //for drawing
+        createInternalTriggerParameter("colorR", 0.f, -5.f, 5.f);
+        createInternalTriggerParameter("colorG", 0.f, -5.f, 5.f);
+        createInternalTriggerParameter("colorB", 0.f, -5.f, 5.f);
+        createInternalTriggerParameter("colorA", 1.f, -5.f, 5.f);
+        createInternalTriggerParameter("posX", 0.f, -1000.f, 1000.f);
+        createInternalTriggerParameter("posY", 0.f, -1000.f, 1000.f);
+        createInternalTriggerParameter("posZ", 0.f, -1000.f, 1000.f);
+        createInternalTriggerParameter("z", 80, -1000, 1000);
+        createInternalTriggerParameter("startPos", 0, 0, 10000); //contains this start position in the array pos to draw
+
     }
 
-    //
+  // The graphics processing function
+  void onProcess(Graphics& g) override {
+    // Get the paramter values on every video frame, to apply changes to the
+    // current instance
+    float red = getInternalParameterValue("colorR");
+    float green = getInternalParameterValue("colorG");
+    float blue = getInternalParameterValue("colorB");
+    float alpha = getInternalParameterValue("colorA");
+    float x = getInternalParameterValue("posX");
+    float y = getInternalParameterValue("posY");
+    float z = getInternalParameterValue("posZ");
+    Vec3f position = Vec3f(x, y, z);
+    Color sphereColor{red, green, blue, alpha};
+    std::cout<<" In on process graphics " << sphereColor.a  <<std::endl;
+    g.lighting(true);
+    //draw and color spheres 
+    g.pushMatrix();
+    g.translate(position);
+    g.color(sphereColor);
+    g.draw(mMesh);
+    g.popMatrix();
+
+  }
+
     
     virtual void onProcess(AudioIOData& io) override {
         updateFromParameters();
