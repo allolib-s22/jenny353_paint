@@ -44,7 +44,7 @@ public:
         // We have the mesh be a sphere
         addSphere(mMesh, 0.2); 
         mMesh.generateNormals();
-        mMesh.smooth();
+        //mMesh.smooth();
         
 
         createInternalTriggerParameter("amplitude", 0.3, 0.0, 1.0);
@@ -91,7 +91,7 @@ public:
     float z = getInternalParameterValue("posZ");
     Vec3f position = Vec3f(x, y, z);
     Color sphereColor{red, green, blue, alpha};
-    std::cout<<" In on process graphics " << sphereColor.a  <<std::endl;
+    //std::cout<<" In on process graphics " << sphereColor.a  <<std::endl;
     g.lighting(true);
     //draw and color spheres 
     g.pushMatrix();

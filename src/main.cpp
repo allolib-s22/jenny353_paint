@@ -46,12 +46,13 @@ struct MusicBrush : App {
   Light light;
   Mesh mMesh;
 
-  std::vector <Vec3f> pos; // keeps position for where to draw each sphere
+  std::vector <std::pair<Vec3f, float>> pos; // keeps position for where to draw each sphere, and its time elapsed from on mouseDown
   std::vector <int> start_stroke_positions; // keeps track of where all the stroke positions start for the undo function 
   Color colorPicker{1.f, 1.f, 1.f, 1.f};
   bool move_with_mouse = false;
   int sequenceFileNum = 0;
   
+  //
   
   //for loop pedal
   bool recordLoop = false;
@@ -61,19 +62,39 @@ struct MusicBrush : App {
   SynthGUIManager<Sub> synthManager{"Sub"};
   int midiNote = 0;
   float frequency = 0;
-  Timer durationTimer;
+  Clock clock1;
+  Clock clock2;
+
+  float startStrokeTime = 0.f;
+  float startLoopTime = 0.f;
+  float startLoopPos = 0.f;
+  bool setFirst = false;
+  int getMostRecentStrokeStart;
+  
 
   void onCreate() override {
+    clock1.useRT();
+    clock2.useRT();
+    // std::cout<< "clock.now " <<clock.now() <<std::endl;
+    // std::cout<< "clock.rt " <<clock.rt() <<std::endl;
+    // std::cout<< "clock.dt " <<clock.dt() <<std::endl;
+    // std::cout<< "clock.frame " <<clock.frame() <<std::endl;
+    // std::cout<< "clock.fps " <<clock.fps() <<std::endl;
+    // std::cout<< "clock.update() " <<clock.update() <<std::endl;
+    // std::cout<< "clock.now " <<clock.now() <<std::endl;
+    
     //for graphics
     nav().pos(0, 0, 100); 
     light.pos(0, 0, 100); // where the light is set
 
     addSphere(mMesh, 0.2);
     mMesh.generateNormals();
-    mMesh.smooth();
+    //mMesh.smooth();
 
     // disable nav control mouse drag to look
     navControl().useMouse(false);
+
+    
 
 
     // Set sampling rate for Gamma objects from app's audio
@@ -137,19 +158,44 @@ struct MusicBrush : App {
 
 
   virtual void onDraw(Graphics &g) override { 
+
     g.clear();
     gl::depthTesting(true);
     g.lighting(true);
-    g.blending(true);
+    //g.blending(true);
     
     //draw and color spheres 
+  // if(playLoop && !recordLoop ){
+  //     //if we are drawing while replaying the loops
+  //     //need to draw the current on mouse drags that are not captured in the while below
+  //     getMostRecentStrokeStart = start_stroke_positions.back();
+  //     int j = getMostRecentStrokeStart+1;
+  //       while(j < pos.size()-1){
+  //         g.pushMatrix();
+  //         g.translate(pos[j].first);
+  //         g.color(colorPicker);
+  //         g.draw(mMesh);
+  //         g.popMatrix();
+  //         j++;
+  //       }
+  //       getMostRecentStrokeStart = j+1;
+        
+  //   }
+
 
 
     //load sequence, for each active voice, use getInternalParameterValue(startPos)
         //for each active voice,  make this the start pos and draw the strokes that start there
     auto *voices = synthManager.synthSequencer().synth().getActiveVoices();
-    while (voices) {
-      int startPos = voices->getInternalParameterValue("startPos");
+  
+  while (voices) {
+
+    int startPos = voices->getInternalParameterValue("startPos");
+    
+    if(!setFirst){
+      startLoopPos = startPos;
+      setFirst = true;
+    }
     
     float red = voices->getInternalParameterValue("colorR");
     float green = voices->getInternalParameterValue("colorG");
@@ -159,14 +205,32 @@ struct MusicBrush : App {
 
     int i = startPos;
     //std::cout<<"pos.size()"<<pos.size()<<std::endl; 
-      while(i < pos.size() && pos.size() > startPos && !(pos[i].x == 0 && pos[i].y == 0  && pos[i].z == 0)){
+    //only draw that dots that are within their duration
+      clock2.update();
+      float currentTime = clock2.now();
+      //std::cout<<"On draw 1:  currenttime"<< currentTime <<std::endl;
+          
+
+      while(i < pos.size() && !(pos[i].first.x == 0 && pos[i].first.y == 0  && pos[i].first.z == 0) && ( pos[i].second - pos[startLoopPos].second <= currentTime - startLoopTime)){
         //std::cout<<"in onDraw, i = " << i << " posx: "<< pos[i].x <<  " posy: "<< pos[i].y <<  " posz: "<< pos[i].z <<" color = " << colorSphere.r<<std::endl;
         g.pushMatrix();
-        g.translate(pos[i]);
+        g.translate(pos[i].first);
         g.color(colorSphere);
         g.draw(mMesh);
         g.popMatrix();
         i++;
+        clock2.update();
+        currentTime = clock2.now();
+        //std::cout<<"On draw 2:  currenttime"<< currentTime <<std::endl;
+        //std::cout<<"On draw 2:  currentTime - startLoopTime"<< currentTime - startLoopTime <<std::endl;
+        // std::cout<< "startLooptime : " << startLoopTime <<std::endl;
+        // std::cout<< "currentTime : " <<currentTime <<std::endl;
+        // std::cout<< "currentTime - startLoopTime: " <<currentTime - startLoopTime <<std::endl;
+        // std::cout<< "pos[i].second : " << pos[i].second <<std::endl;
+        // std::cout<< "pos[startPos].second : " <<pos[startPos].second <<std::endl;
+         //std::cout<< "pos[i].second - pos[startPos].second: " <<pos[i].second - pos[startPos].second<<std::endl;
+         //std::cout<< " pos[startPos].second: " <<pos[startPos].second<<std::endl;
+        
     }
             voices = voices->next;
     }
@@ -177,7 +241,7 @@ struct MusicBrush : App {
     // GUI is drawn here
     imguiDraw();
     //change z coord with gui
-    std::cout<<"posZ: " << synthManager.voice()->getInternalParameterValue("z") <<std::endl;
+    //std::cout<<"posZ: " << synthManager.voice()->getInternalParameterValue("z") <<std::endl;
     nav().pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); //zoom in and out, higher z is out farther away
     
 
@@ -185,8 +249,11 @@ struct MusicBrush : App {
         std::string sequenceName = "sound" + std::to_string(sequenceFileNum-1); //loop prev file 
         std::cout<<"play sequence: " << sequenceName <<std::endl;
         synthManager.synthSequencer().playSequence(sequenceName + ".synthSequence"); 
+        clock2.update();
+        startLoopTime = clock2.now();
+        //std::cout<<"Start Loop:  startLoopTime"<< startLoopTime <<std::endl;
+        setFirst = false;
         }
-
   }
 
   Vec3d unproject(Vec3d screenPos) {
@@ -204,10 +271,7 @@ struct MusicBrush : App {
       return true;
     }
     std::cout<<"Mouse Down"<< std::endl;
-    
-   
-    //start duration timer
-    durationTimer.start();
+     
 
     Vec3d screenPos;
     screenPos.x = (m.x() * 1. / width()) * 2. - 1.;
@@ -288,9 +352,14 @@ struct MusicBrush : App {
     //add a sphere to plane
     Vec3f position = Vec3f(worldPos.x, worldPos.y, worldPos.z);
 
-    pos.push_back(position);
+    clock1.update();
+    float timeElapsedFromStart = clock1.now() - startStrokeTime; 
+    std::cout<<"on Mouse Drag:  timeElapsedFromstart"<< timeElapsedFromStart <<std::endl;
+          
+    
+    pos.push_back(std::pair<Vec3d, al_sec>(position, timeElapsedFromStart));
     Color sphereColor = colorPicker;
-
+    
 
     synthManager.voice()->setInternalParameterValue("posX",worldPos.x);
     synthManager.voice()->setInternalParameterValue("posY",worldPos.y);
@@ -309,7 +378,8 @@ struct MusicBrush : App {
     }
 
     std::cout<<"Mouse Up Trigger off: "<< midiNote<< std::endl;
-    durationTimer.stop();
+    
+
     //trigger note off
     synthManager.triggerOff(midiNote);
     
@@ -319,7 +389,8 @@ struct MusicBrush : App {
     updateTimbre(original_timbre);
 
     Vec3f nullVal = Vec3f{0,0,0};
-    pos.push_back(nullVal); //to mark the end of the stroke drawing 
+    
+    pos.push_back(std::pair<Vec3d, al_sec>(nullVal, 0)); //to mark the end of the stroke drawing 
 
     return true;
   }
@@ -330,11 +401,15 @@ struct MusicBrush : App {
      if( k.key() == ' ' && recordLoop == false ){ //start recording loop
           //set recordLoop to true
           recordLoop = true;
+          clock1.update();
+          startStrokeTime = clock1.now();
+          std::cout<<"Start recording:  startStrokeTime"<< startStrokeTime <<std::endl;
           
           std::string sequenceName = "sound" + std::to_string(sequenceFileNum);
           std::cout<<"start recording in file: sequenceName " << sequenceName <<std::endl;
 
           synthManager.synthRecorder().startRecord(sequenceName, true);
+          setFirst = false;
           
      }
       else if( k.key() == ' ' && recordLoop == true ){ //start playing recorded loop on repeat with sequencer 
