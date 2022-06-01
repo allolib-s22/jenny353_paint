@@ -51,7 +51,6 @@ struct MusicBrush : App {
   Color colorPicker{1.f, 1.f, 1.f, 1.f};
   bool move_with_mouse = false;
   int sequenceFileNum = 0;
-  
   //
   
   //for loop pedal
@@ -64,17 +63,19 @@ struct MusicBrush : App {
   float frequency = 0;
   Clock clock1;
   Clock clock2;
+  Clock clock3;
 
   float startStrokeTime = 0.f;
   float startLoopTime = 0.f;
   float startLoopPos = 0.f;
   bool setFirst = false;
-  int getMostRecentStrokeStart;
+  bool drawLastStroke = false;
   
 
   void onCreate() override {
     clock1.useRT();
     clock2.useRT();
+    clock3.useRT();
     // std::cout<< "clock.now " <<clock.now() <<std::endl;
     // std::cout<< "clock.rt " <<clock.rt() <<std::endl;
     // std::cout<< "clock.dt " <<clock.dt() <<std::endl;
@@ -164,23 +165,22 @@ struct MusicBrush : App {
     g.lighting(true);
     //g.blending(true);
     
-    //draw and color spheres 
-  // if(playLoop && !recordLoop ){
-  //     //if we are drawing while replaying the loops
-  //     //need to draw the current on mouse drags that are not captured in the while below
-  //     getMostRecentStrokeStart = start_stroke_positions.back();
-  //     int j = getMostRecentStrokeStart+1;
-  //       while(j < pos.size()-1){
-  //         g.pushMatrix();
-  //         g.translate(pos[j].first);
-  //         g.color(colorPicker);
-  //         g.draw(mMesh);
-  //         g.popMatrix();
-  //         j++;
-  //       }
-  //       getMostRecentStrokeStart = j+1;
+  //draw and color spheres 
+  if(playLoop && drawLastStroke == true ){
+    //last stroke 
+     int j = start_stroke_positions.back();
+      //if we are drawing while replaying the loops
+      //need to draw the current on mouse drags that are not captured in the while below
+        while(j < pos.size() && !(pos[j].first.x == 0 && pos[j].first.y == 0  && pos[j].first.z == 0) ){
+          g.pushMatrix();
+          g.translate(pos[j].first);
+          g.color(colorPicker);
+          g.draw(mMesh);
+          g.popMatrix();
+          j++;
+        }
         
-  //   }
+    }
 
 
 
@@ -271,8 +271,9 @@ struct MusicBrush : App {
       return true;
     }
     std::cout<<"Mouse Down"<< std::endl;
-     
 
+  
+    drawLastStroke = true;
     Vec3d screenPos;
     screenPos.x = (m.x() * 1. / width()) * 2. - 1.;
     screenPos.y = ((height() - m.y()) * 1. / height()) * 2. - 1.;
@@ -378,8 +379,9 @@ struct MusicBrush : App {
     }
 
     std::cout<<"Mouse Up Trigger off: "<< midiNote<< std::endl;
-    
 
+    
+    drawLastStroke = false;
     //trigger note off
     synthManager.triggerOff(midiNote);
     
