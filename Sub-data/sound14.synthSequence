@@ -1,4 +1,4 @@
-@ 0 2.06669 Sub 0.3 369.994 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 0.133333 0.894118 0.0627451 1 -16.8814 -4.35432 -20.0033 80 0 20 164.148 
-@ 8.0021 0.249012 Sub 0.3 415.305 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 0.133333 0.894118 0.0627451 1 9.78047 -23.9823 -20.0033 80 0 21 172.15 
+@ 0 2.46506 Sub 0.3 391.995 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 0.133333 0.894118 0.0627451 1 -14.4697 -5.35916 -20.0033 80 0 29 309.94 
+@ 6.44991 1.41488 Sub 0.3 391.995 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 0.133333 0.894118 0.0627451 1 -15.4076 -4.62228 -20.0033 80 0 30 316.39 
 # Sub amplitude frequency attackTime releaseTime sustain curve noise envDur cf1 cf2 cfRise bw1 bw2 bwRise hmnum hmamp pan colorR colorG colorB colorA posX posY posZ z startPos brushStrokeIndex startStrokeTime 
 #  amplitude frequency attackTime releaseTime sustain curve noise envDur cf1 cf2 cfRise bw1 bw2 bwRise hmnum hmamp pan colorR colorG colorB colorA posX posY posZ z startPos brushStrokeIndex startStrokeTime 

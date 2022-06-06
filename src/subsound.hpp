@@ -75,7 +75,8 @@ public:
         createInternalTriggerParameter("posZ", 0.f, -1000.f, 1000.f);
         createInternalTriggerParameter("z", 80, -1000, 1000);
         createInternalTriggerParameter("startPos", 0, 0, 10000); //contains this start position in the array pos to draw
-
+        createInternalTriggerParameter("brushStrokeIndex", 0, 0, 10000); //the index of the brushStroke that matches to this sound in brushstrokes vector
+        createInternalTriggerParameter("startStrokeTime", 0.f, 0.f, 10000.f);
     }
 
   // The graphics processing function
