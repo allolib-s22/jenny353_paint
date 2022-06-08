@@ -90,9 +90,7 @@ struct MusicBrush : App {
     synthManager.synthSequencer().verbose(true);
 
     synthManager.synthSequencer().setDirectory("Sub-data");
-  
   }
-
 
   // The audio callback function. Called when audio hardware requires data
   void onSound(AudioIOData& io) override {
@@ -130,11 +128,11 @@ struct MusicBrush : App {
 
 
   virtual void onDraw(Graphics &g) override { 
+    
     g.clear();
     gl::depthTesting(true);
     g.lighting(true);
 
-  
 
     //load sequence, for each active voice, use getInternalParameterValue(startPos)
         //for each active voice,  make this the start pos and draw the strokes that start there
@@ -167,7 +165,9 @@ struct MusicBrush : App {
   time.stop();
   float seconds = time.elapsedSec();
   time.start();
-  std::cout<<"seconds = "  << seconds<<std::endl;
+  //std::cout<<"seconds = "  << seconds<<std::endl;
+
+  
   for( int j = 0; j < strokeSize; j++){
    if(( ( currentLoopStart + (loopCounter * seconds) ) + currentBrushStroke.dots[j].second <= clock.now()) ){
     //if( ( (currentLoopStart + ( loopCounter  * recordDuration) ) + currentBrushStroke.dots[j].second <= clock.now()) ){
@@ -183,10 +183,10 @@ struct MusicBrush : App {
           clock.update();
           //j ++;
     }
-  }
-    std::cout<<"voice->next = "  << voices->next<<std::endl;
-    voices = voices->next;
     
+  }
+    //std::cout<<"voice->next = "  << voices->next<<std::endl;
+    voices = voices->next;
     }
     
     //
@@ -206,7 +206,6 @@ struct MusicBrush : App {
         loopCounter++; 
         recordDuration = synthManager.synthSequencer().getSequenceDuration(sequenceName + ".synthSequence");
         time.start();
-
         }     
   }
 
@@ -333,6 +332,13 @@ struct MusicBrush : App {
     return true;
   }
 
+  bool onMouseMove(const Mouse &m) override {
+    //to show what note you will play
+    midiNote = (m.x() + (800-m.y()))/50 + 65; //(range from 65-105)
+    std::cout<<"Click to play midi note = "<< midiNote <<std::endl;
+    return true;
+  }
+
   bool onMouseUp(const Mouse &m) override {
     if(isImguiUsingInput()){
       return true;
@@ -349,8 +355,6 @@ struct MusicBrush : App {
     float original_timbre = 1.0/(sphereColor.a); 
     updateTimbre(original_timbre);
 
-    
-
     return true;
   }
 
@@ -363,14 +367,12 @@ struct MusicBrush : App {
           recordLoop = true; 
           std::string sequenceName = "sound" + std::to_string(sequenceFileNum);
           std::cout<<"start recording in file: sequenceName " << sequenceName <<std::endl;
-
           synthManager.synthRecorder().startRecord(sequenceName, true);
           
      }
       else if( k.key() == ' ' && recordLoop == true ){ //start playing recorded loop on repeat with sequencer 
           std::cout<<"stop recording " <<std::endl;
           synthManager.synthRecorder().stopRecord();
-          
           const float A4 = 220.f;
           playLoop = true;
           recordLoop = false;
@@ -378,14 +380,12 @@ struct MusicBrush : App {
           std::cout<<"play sequence: " << sequenceName <<std::endl;
           sequenceFileNum++;
 
-          loopCounter = 0.f;
-          
+          loopCounter = 0.f;   
           
       } else if(k.shift() ){
         std::cout<<"shift pressed, end song " <<std::endl;
         //current sequence should finish and stop looping
         playLoop = false;
-  
       }
   
     return true;
