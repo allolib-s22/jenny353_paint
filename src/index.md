@@ -2,7 +2,7 @@
 
  AlloPaint is a musical tool that utilized Allolib as a 2D canvas where the cursor acts as a paintbrush. As a drawing action is performed, the initial mouse x and y coordinates would be mapped to a midi note and that note would be triggered.
 
-![Allopaint.png](./Allopaint.png)
+![Allopaint.png](Screen Shot 2022-06-08 at 11.04.16 AM.png)
 
 To use: 
 1. git clone this repository
