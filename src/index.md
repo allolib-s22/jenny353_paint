@@ -21,9 +21,9 @@ On shift, the sequence will finish playing.
 ### Version #2
 - uses a subtractive synthesis sound where the color's alpha value relates to the note's timbre
 - the drawing loops corresponding to the note that is playing
-[Branch with Version #2]: https://github.com/allolib-s22/jenny353_paint/tree/addToColorToChangeTimbre
+[Branch with Version #2]( https://github.com/allolib-s22/jenny353_paint/tree/addToColorToChangeTimbre )
 
 ### Version #3
 - adaptation of initial version that allows the user to use a phone as a drawing controller instead of the mouse 
 - Done By Andrew Lu
-[Branch with Version #3]: https://github.com/allolib-s22/jenny353_paint/tree/phone-control
+[Branch with Version #3] ( https://github.com/allolib-s22/jenny353_paint/tree/phone-control )
