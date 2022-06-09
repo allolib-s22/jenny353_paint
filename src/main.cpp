@@ -30,16 +30,65 @@ Interact with paintbrush using ray intersection tests, and draw 3D spheres that 
 #include <vector>
 #include "sound.hpp"
 
+
+   
+#include <atomic>
+
+#include "al/scene/al_DynamicScene.hpp"
+#include "al/sound/al_Ambisonics.hpp"
+#include "al/sound/al_Lbap.hpp"
+#include "al/sound/al_Speaker.hpp"
+#include "al/sound/al_StereoPanner.hpp"
+#include "al/sound/al_Vbap.hpp"
+#include "al/sphere/al_AlloSphereSpeakerLayout.hpp"
+#include "Gamma/Oscillator.h"
+#include "al/app/al_DistributedApp.hpp"
+#include "al/graphics/al_Mesh.hpp"
+
+
+
+
+
+using namespace std;
+
+#define BLOCK_SIZE (512)
+
+#define NPOINTS 1024
+
+struct SharedState {
+  uint16_t count;
+  Vec3f position[NPOINTS];
+  Color color[NPOINTS]; // *3 if all have the same alpha
+};
+
+
 using namespace al;
 
+#define BLOCK_SIZE (512)
 
-struct RayBrush : App {
+struct RayBrush : public DistributedAppWithState <SharedState> {
+
+  Spatializer *spatializer{nullptr};
+
+  double speedMult = 0.04f;
+  double mElapsedTime = 0.0;
+
+  ParameterVec3 srcpos{"srcPos", "", {0.0, 0.0, 0.0}};
+  atomic<float> *mPeaks{nullptr};
+
+  Speakers speakerLayout;
+
+  int speakerType = 0;
+  int spatializerType = 0;
+  unsigned long counter = 0;  // overall sample counter
 
   //variables for graphics
   Material material;
   Light light;
   Mesh mMesh;
 
+
+  //std::vector<std::pair<Vec3f, Color>> objects;
   std::vector <Vec3f> pos; // keeps position for where to draw each sphere
   std::vector <Color> colorSpheres; //keeps track of color for each drawing stroke
   std::vector <int> start_stroke_positions; // keeps track of where all the stroke positions start for the undo function 
@@ -59,12 +108,96 @@ struct RayBrush : App {
   float frequency = 0;
   Timer durationTimer;
 
+void initSpeakers(int type = -1) {
+    if (type < 0) {
+      type = (speakerType + 1) % 3;
+    }
+    if (type == 0) {
+      speakerLayout = AlloSphereSpeakerLayout();
+    } else if (type == 1) {
+      speakerLayout = SpeakerRingLayout<8>(0, 0, 5);
+    } else if (type == 2) {
+      speakerLayout = StereoSpeakerLayout(0, 30, 5);
+    }
+    speakerType = type;
+    if (mPeaks) {
+      free(mPeaks);
+    }
+    mPeaks = new atomic<float>[speakerLayout.size()];  // Not being freed
+                                                       // in this example
+  }
+
+  void initSpatializer(int type) {
+    if (spatializer) {
+      delete spatializer;
+    }
+    spatializerType = type;
+    if (type == 1) {
+      spatializer = new Lbap(speakerLayout);
+    } else if (type == 2) {
+      spatializer = new Vbap(speakerLayout, speakerType == 0);
+    } else if (type == 3) {
+      spatializer = new AmbisonicsSpatializer(speakerLayout, 3, 1, 1);
+    } else if (type == 4) {
+      spatializer = new AmbisonicsSpatializer(speakerLayout, 3, 2, 1);
+    } else if (type == 5) {
+      spatializer = new AmbisonicsSpatializer(speakerLayout, 3, 3, 1);
+    } else if (type == 6) {
+      spatializer = new StereoPanner(speakerLayout);
+    }
+    spatializer->compile();
+  }
+
+  void onInit() override {
+    audioIO().channelsBus(1);
+    //addDodecahedron(mMesh);
+    addSphere(mMesh, 0.2); 
+    mMesh.generateNormals();
+    initSpeakers(0);
+    initSpatializer(1);
+
+    //nav().pos(0, 3, 25);
+    //nav().faceToward({0, 0, 0});
+  }
+
+  void onSound(AudioIOData &io) override {
+    // Render signal to be panned
+    
+    while (io()) {
+      float env = (22050 - (counter % 22050)) / 22050.0f;
+      io.bus(0) = 0.5f * rnd::uniform() * env;
+      ++counter;
+    }
+    //    // Spatialize
+    spatializer->prepare(io);
+    spatializer->renderBuffer(io, Pose(srcpos.get()), io.busBuffer(0),
+                              io.framesPerBuffer());
+    synthManager.render(io);  // Render audio
+    spatializer->finalize(io);
+
+    // Now compute RMS to display the signal level for each speaker
+    for (size_t speaker = 0; speaker < speakerLayout.size(); speaker++) {
+      float rms = 0;
+      for (unsigned int i = 0; i < io.framesPerBuffer(); i++) {
+        unsigned int deviceChannel = speakerLayout[speaker].deviceChannel;
+        float sample = io.out(deviceChannel, i);
+        rms += sample * sample;
+      }
+      rms = sqrt(rms / io.framesPerBuffer());
+      mPeaks[speaker].store(rms);
+      
+    }
+    
+  }
+
+
+
   void onCreate() override {
     //for graphics
     nav().pos(0, 0, 100); //zoom in and out, higher z is out farther away
     light.pos(0, 0, 100); // where the light is set
-    addSphere(mMesh, 0.2); 
-    mMesh.generateNormals();
+    //addSphere(mMesh, 0.2); 
+    //mMesh.generateNormals();
 
     //for sound
 
@@ -83,16 +216,29 @@ struct RayBrush : App {
   }
 
 
-  // The audio callback function. Called when audio hardware requires data
-  void onSound(AudioIOData& io) override {
-    synthManager.render(io);  // Render audio
-  }
 
   void onAnimate(double dt) override {
+
+        // Move source position
+    mElapsedTime += dt;
+    float tta = mElapsedTime * speedMult * 2.0f * M_PI;
+
+    float x = 6.0f * cos(tta);
+    float y = 5.0f * sin(2.8f * tta);
+    float z = 6.0f * sin(tta);
+
+    srcpos.set(Vec3d(x, y, z));
     // The GUI is prepared here
    
     //navControl().useMouse(!isImguiUsingInput()); //allows screen to move with mouse
     //navControl().active(!isImguiUsingInput());  // not sure what this does
+
+    //draw to shared state
+    if(isPrimary()){
+      state().count++;
+      std::copy(pos.begin(), pos.end(), state().position);
+      std::copy(colorSpheres.begin(), colorSpheres.end(), state().color);
+    }
     
     imguiBeginFrame();
     ImGui::Begin("my window");
@@ -250,6 +396,27 @@ struct RayBrush : App {
 
   //for Loop Pedal Spacebar
    bool onKeyDown(const Keyboard &k) override {
+     audioIO().stop();
+    if (k.key() == 'i') {
+      initSpeakers();
+      initSpatializer(spatializerType);
+    }
+
+    if (k.key() == '1') {
+      initSpatializer(1);
+    } else if (k.key() == '2') {
+      initSpatializer(2);
+    } else if (k.key() == '3') {
+      initSpatializer(3);
+    } else if (k.key() == '4') {
+      initSpatializer(4);
+    } else if (k.key() == '5') {
+      initSpatializer(5);
+    } else if (k.key() == '6') {
+      initSpatializer(6);
+    }
+    audioIO().start();
+
      if( k.key() == ' ' && recordLoop == false ){ //start recording loop
           //set recordLoop to true
           recordLoop = true;
@@ -283,12 +450,19 @@ struct RayBrush : App {
     return true;
   }
 
+   void onExit() override {
+    if (mPeaks) {
+      free(mPeaks);
+    }
+  }
+
 };
 int main() {
   RayBrush app;
   // Set window size
   app.dimensions(1200, 800);
-  app.configureAudio(48000., 512, 2, 0);
+  AudioDevice::printAll();
+  app.configureAudio(44100, BLOCK_SIZE, 60, 0);
   app.start();
   return 0;
 }
