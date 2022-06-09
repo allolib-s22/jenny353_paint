@@ -26,5 +26,6 @@ On shift, the sequence will finish playing.
 
 ### Version #3
 - adaptation of initial version that allows the user to use a phone as a drawing controller instead of the mouse 
-- Done By Andrew Lu
+- Work done by Andrew Lu
+
 [Branch with Version #3](https://github.com/allolib-s22/jenny353_paint/tree/phone-control)
