@@ -4,9 +4,9 @@
 
 ![Screen Shot 2022-06-08 at 11 04 16 AM](https://user-images.githubusercontent.com/43687816/172688138-3ee16b69-c39e-4e51-85e2-abc824d78625.png)
 
-To use: 
-1. git clone this repository
-2. ./run.sh 
+
+### To use: 
+Follow directions in the [README.md](https://github.com/allolib-s22/jenny353_paint#readme)
 
 
 ### To use spacebar loop pedal:
