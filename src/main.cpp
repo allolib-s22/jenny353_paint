@@ -5,7 +5,8 @@ Description:
 Interact with paintbrush using ray intersection tests, and draw 3D spheres that are mapped sonically to 2D coordinates
 
 */
-#include <stdlib.h> 
+#include <stdlib.h>
+#include <cmath>
 
 #include "al/app/al_App.hpp"
 #include "al/graphics/al_Shapes.hpp"
@@ -25,7 +26,7 @@ Interact with paintbrush using ray intersection tests, and draw 3D spheres that 
 #include "al/io/al_Window.hpp"
 #include "al/system/al_Time.hpp"
 #include "al/ui/al_PresetSequencer.hpp"
-
+#include "al/sphere/al_AlloSphereSpeakerLayout.hpp"
 
 #include <vector>
 #include "sound.hpp"
@@ -39,6 +40,8 @@ struct RayBrush : App {
   Material material;
   Light light;
   Mesh mMesh;
+
+  Speakers speakerLayout;
 
   // std::vector <Vec3f> pos; // keeps position for where to draw each sphere
   // std::vector <Color> colorSpheres; //keeps track of color for each drawing stroke
@@ -64,8 +67,14 @@ struct RayBrush : App {
 
   void onCreate() override {
     //for graphics
-    nav().pos(0, 0, 100); //zoom in and out, higher z is out farther away
-    light.pos(0, 0, 100); // where the light is set
+    // nav().pos(0, 0, 100); //zoom in and out, higher z is out farther away
+    // light.pos(0, 0, 100); // where the light is set
+
+    // This allows the whole sphere to be visible when running on 2D screen.
+    // If running in the sphere, you should probably set this to 0, 0, 0
+    nav().pos(0, 3, 25);
+    nav().faceToward({0, 0, 0});
+
     addSphere(mMesh, 0.2); 
     mMesh.generateNormals();
 
@@ -87,6 +96,15 @@ struct RayBrush : App {
     paramServer.print();
   }
 
+  void onInit() override {
+    speakerLayout = AlloSphereSpeakerLayout();
+
+    // For reference, print a sphere directly in front of you
+    Vec3d position(0, 0, -5);
+    Color color(1, 1, 1);
+
+    addToScreen(position, &color);
+  }
 
   // The audio callback function. Called when audio hardware requires data
   void onSound(AudioIOData& io) override {
@@ -140,23 +158,54 @@ struct RayBrush : App {
     g.clear(0);
     gl::depthTesting(true);
     g.lighting(true);
-    //std::cout<<"in onDraw "<< " pos[0]: "<< pos[0] <<std::endl;
-    //draw and color spheres 
+
+    // Draw the speakers
+    for (size_t i = 0; i < speakerLayout.size(); ++i) {
+      g.pushMatrix();
+      float xyz[3];
+      speakerLayout[i].posCart(xyz);
+      g.translate(-xyz[1], xyz[2], -xyz[0]);
+      g.scale(0.15f);
+      g.color(HSV(0.5f));
+      g.polygonLine();
+      g.draw(mMesh);
+      g.popMatrix();
+    }
+
+    // Draw and color spheres
     for (int i = 0; i < objects.size(); i++) {
       std::pair<Vec3d, Color> object = objects.at(i);
       
       g.pushMatrix();
       g.translate(object.first);
+      g.scale(0.3f);
       g.color(object.second);
       g.draw(mMesh);
       g.popMatrix();
     }
+
+    // WIP: Draw connected lines using line mesh
+    // Mesh lineMesh;
+
+    // for (int i = 0; i < objects.size(); i++) {
+    //   std::pair<Vec3d, Color> object = objects.at(i);
+    //   lineMesh.vertex(object.first.x, object.first.y, object.first.z);
+    // }
+
+    // lineMesh.primitive(Mesh::LINES);
+    // g.pushMatrix();
+    // g.color(1);
+    // g.draw(lineMesh);
+    // g.popMatrix();
+    // End WIP
+
     // Render the synth's graphics
     synthManager.render(g);
     // GUI is drawn here
     imguiDraw();
+
     //change z coord with gui
-    nav().pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); //zoom in and out, higher z is out farther away
+    // nav().pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); //zoom in and out, higher z is out farther away
     light.pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); // where the light is set
 
     if(!synthManager.synthSequencer().playing() && playLoop == true ){ // keeps looping if playLoop is on
@@ -217,22 +266,22 @@ struct RayBrush : App {
   }
 
   bool onMouseDown(const Mouse &m) override {
-    std::cout<<"Mouse Down"<< std::endl;
-    // if mouse clicks on image gui, do not draw!!!
-    if(isImguiUsingInput()){
-      return true;
-    }
+    // std::cout<<"Mouse Down"<< std::endl;
+    // // if mouse clicks on image gui, do not draw!!!
+    // if(isImguiUsingInput()){
+    //   return true;
+    // }
 
-    Vec3d screenPos;
-    screenPos.x = (m.x() * 1. / width()) * 2. - 1.;
-    screenPos.y = ((height() - m.y()) * 1. / height()) * 2. - 1.;
-    screenPos.z = 1.;
-    Vec3d worldPos = unproject(screenPos);
-    //add a sphere to plane
-    Vec3f position = Vec3f(worldPos.x, worldPos.y, worldPos.z);
+    // Vec3d screenPos;
+    // screenPos.x = (m.x() * 1. / width()) * 2. - 1.;
+    // screenPos.y = ((height() - m.y()) * 1. / height()) * 2. - 1.;
+    // screenPos.z = 1.;
+    // Vec3d worldPos = unproject(screenPos);
+    // //add a sphere to plane
+    // Vec3f position = Vec3f(worldPos.x, worldPos.y, worldPos.z);
 
-    addToScreen(position);
-    noteStart(position);
+    // addToScreen(position);
+    // noteStart(position);
     
     return true;
   }
@@ -290,8 +339,6 @@ struct RayBrush : App {
 
   // This gets called whenever we receive a packet
   void onMessage(osc::Message& m) override {
-    // m.print();
-
     // Check that the address and tags match what we expect
     if (m.addressPattern().find("/rotation") != std::string::npos && m.typeTags() == "iiiiiii") {
       // Extract the data out of the packet
@@ -304,17 +351,12 @@ struct RayBrush : App {
       m >> cb;
       m >> touch;
 
+      float xFloat = xInt > 180000 ? 360.0 - (xInt / 1000.0) : -1 * xInt / 1000.0;
+
       Vec3d position;
-
-      position.x = xInt / 1000.0;
-      if (position.x < 180) {
-        position.x *= -1;
-      } else {
-        position.x = 360 - position.x;
-      }
-
-      position.y = yInt / 1000.0;
-      position.z = zInt / 1000.0;
+      position.x = 5 * std::sin(xFloat * M_PI / 180) * std::cos(yInt / 1000.0 * M_PI / 180);
+      position.y = 5 * std::sin(yInt / 1000.0 * M_PI / 180);
+      position.z = -5 * std::cos(xFloat * M_PI / 180);
 
       Color color(cr / 256.0f, cg / 256.0f, cb / 256.0f);
 
