@@ -1,3 +1,12 @@
-@ 0 8.70064 Sub 0.3 466.164 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 0.747936 0.0414985 0.769608 1 -14.2688 5.96207 -20.0033 80 0 5 54.5453 
-# Sub amplitude frequency attackTime releaseTime sustain curve noise envDur cf1 cf2 cfRise bw1 bw2 bwRise hmnum hmamp pan colorR colorG colorB colorA posX posY posZ z startPos brushStrokeIndex startStrokeTime 
+@ 0 0.415928 Sub 0.3 261.626 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 -35.7054 -5.42615 -20.0033 80 0 3 13.7171 
+@ 0.455319 0.299966 Sub 0.3 493.883 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 -12.4601 7.56982 -20.0033 80 0 6 24.2182 
+@ 0.522638 0.383843 Sub 0.3 523.251 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 2.5456 -4.55529 -20.0033 80 0 2 4.63356 
+@ 0.927933 0.458551 Sub 0.3 277.183 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 -24.9201 -14.1348 -20.0033 80 0 0 2.73354 
+@ 1.48252 0.277302 Sub 0.3 261.626 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 -25.791 -16.6804 -20.0033 80 0 4 15.201 
+@ 1.52224 0.31626 Sub 0.3 369.994 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 -0.803874 -19.6279 -20.0033 80 0 7 25.2852 
+@ 1.88789 0.373277 Sub 0.3 391.995 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 -7.90477 -9.44552 -20.0033 80 0 1 3.70038 
+@ 2.439 0.266889 Sub 0.3 554.365 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 8.44068 -7.16788 -20.0033 80 0 8 26.202 
+@ 2.76251 0.223957 Sub 0.3 391.995 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 -21.9056 4.01937 -20.0033 80 0 5 16.4848 
+@ 2.8372 0.373328 Sub 0.3 523.251 0.1 0.5 0.7 4 0 1 2500 2500 1 2500 2500 1 10 0.5 0 1 1 1 1 2.5456 -4.55529 -20.0033 80 0 2 4.63356 
 #  amplitude frequency attackTime releaseTime sustain curve noise envDur cf1 cf2 cfRise bw1 bw2 bwRise hmnum hmamp pan colorR colorG colorB colorA posX posY posZ z startPos brushStrokeIndex startStrokeTime 
+# Sub amplitude frequency attackTime releaseTime sustain curve noise envDur cf1 cf2 cfRise bw1 bw2 bwRise hmnum hmamp pan colorR colorG colorB colorA posX posY posZ z startPos brushStrokeIndex startStrokeTime 

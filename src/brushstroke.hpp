@@ -31,7 +31,7 @@ using namespace al;
 class BrushStroke {        
   public:         
     //vector of Dots < vet 3d positions, float timeFromStart > ,  each dot has a position, and a time from the stroke start
-    //  keeps track of onMouseDrag dots that are drawn and when to draw them
+    //keeps track of onMouseDrag dots that are drawn and when to draw them
     std::vector <std::pair<Vec3f, float>> dots; 
     //color of stroke
     Color color{1.f, 1.f, 1.f, 1.f};

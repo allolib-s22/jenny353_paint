@@ -1,9 +1,8 @@
 /*
-Allocore 
+Allopaint
 
 Description:
-Uses mouse as a paintbrush to draw 3D spheres that are mapped sonically using 2D coordinates.
-
+Uses mouse as a paintbrush to draw spheres that are mapped sonically using 2D coordinates.
 
 */
 #include <stdlib.h> 
@@ -77,7 +76,6 @@ struct MusicBrush : App {
 
     addSphere(mMesh, 0.2);
     mMesh.generateNormals();
-    //mMesh.smooth();
 
     // disable nav control mouse drag to look
     navControl().useMouse(false);
@@ -102,7 +100,7 @@ struct MusicBrush : App {
     // The GUI is prepared here
    
     //navControl().useMouse(!isImguiUsingInput()); //allows screen to move with mouse
-    //navControl().active(!isImguiUsingInput());  // not sure what this does
+    //navControl().active(!isImguiUsingInput()); 
     
     imguiBeginFrame();
     ImGui::Begin("my window");
@@ -116,9 +114,6 @@ struct MusicBrush : App {
       navControl().useMouse(!isImguiUsingInput()); //allows screen to move with mouse
     }
     //3 settings Loop pedal: record, play, off
-    //ImGui::RadioButton("Record Loop", recordLoop); //Spacebar is pressed and loop recording is turned on 
-    //ImGui::RadioButton("Play Loop", playLoop); //Spacebar is pressed while recordLoop is true, recordLoop becomes 
-    // false and playLoop becomes true, looped recording is turned on
     ImGui::Checkbox("Record Loop", &recordLoop);
     ImGui::Checkbox("Play Loop", &playLoop);
 
@@ -135,11 +130,9 @@ struct MusicBrush : App {
 
 
     //load sequence, for each active voice, use getInternalParameterValue(startPos)
-        //for each active voice,  make this the start pos and draw the strokes that start there
     auto *voices = synthManager.synthSequencer().synth().getActiveVoices();
   
   while (voices  ) {
-    std::cout<<"voices id = "  << voices<<std::endl;
     float red = voices->getInternalParameterValue("colorR");
     float green = voices->getInternalParameterValue("colorG");
     float blue = voices->getInternalParameterValue("colorB");
@@ -149,64 +142,48 @@ struct MusicBrush : App {
     int currentBrushStrokeIndex = voices->getInternalParameterValue("brushStrokeIndex") ;
     BrushStroke currentBrushStroke = brushstrokes[currentBrushStrokeIndex];
     int strokeSize = currentBrushStroke.dots.size();
-
-  // int j = 0;
    float currentLoopStart = voices->getInternalParameterValue("startStrokeTime");
    float duration = 0.f;
 
     
    
   clock.update();
-  //std::cout<<"currentBrushStrokeIndex = "  << currentBrushStrokeIndex <<std::endl;
-  //std::cout<<"currentLoopStart = "  << currentLoopStart<<std::endl;
-  //std::cout<<"clocknow = "  << clock.now()<<std::endl;
-  //std::cout<<"loopcounter = "  << loopCounter<<std::endl;
 
   time.stop();
   float seconds = time.elapsedSec();
   time.start();
-  //std::cout<<"seconds = "  << seconds<<std::endl;
 
   
   for( int j = 0; j < strokeSize; j++){
-   if(( ( currentLoopStart + (loopCounter * seconds) ) + currentBrushStroke.dots[j].second <= clock.now()) ){
-    //if( ( (currentLoopStart + ( loopCounter  * recordDuration) ) + currentBrushStroke.dots[j].second <= clock.now()) ){
-        //std::cout<<"currentBrushStroke.dots[j].second = "  << currentBrushStroke.dots[j].second <<std::endl;
-        // std::cout<<"currentLoopStart = "  << currentLoopStart<<std::endl;
-        
-        // std::cout<<"clocknow = "  << clock.now()<<std::endl;
-          g.pushMatrix();
-          g.translate(currentBrushStroke.dots[j].first);
-          g.color(colorSphere);
-          g.draw(mMesh);
-          g.popMatrix();
-          clock.update();
-          //j ++;
-    }
+    if(( ( currentLoopStart + (loopCounter * seconds) ) + currentBrushStroke.dots[j].second <= clock.now()) ){
+            g.pushMatrix();
+            g.translate(currentBrushStroke.dots[j].first);
+            g.color(colorSphere);
+            g.draw(mMesh);
+            g.popMatrix();
+            clock.update();
+      }
     
-  }
-    //std::cout<<"voice->next = "  << voices->next<<std::endl;
+    }
     voices = voices->next;
-    }
+  }
     
-    //
-    // Render the synth's graphics
-    synthManager.render(g);
-    // GUI is drawn here
-    imguiDraw();
-    //change z coord with gui
-    //std::cout<<"posZ: " << synthManager.voice()->getInternalParameterValue("z") <<std::endl;
-    nav().pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); //zoom in and out, higher z is out farther away
-    
+  // Render the synth's graphics
+  synthManager.render(g);
+  // GUI is drawn here
+  imguiDraw();
+  //change z coord with gui
+  nav().pos(0, 0, synthManager.voice()->getInternalParameterValue("z")); //zoom in and out, higher z is out farther away
+  
 
-    if(!synthManager.synthSequencer().playing() && playLoop == true ){ // keeps looping if playLoop is on
-        std::string sequenceName = "sound" + std::to_string(sequenceFileNum-1); //loop prev file 
-        std::cout<<"play sequence: " << sequenceName <<std::endl;
-        synthManager.synthSequencer().playSequence(sequenceName + ".synthSequence"); 
-        loopCounter++; 
-        recordDuration = synthManager.synthSequencer().getSequenceDuration(sequenceName + ".synthSequence");
-        time.start();
-        }     
+  if(!synthManager.synthSequencer().playing() && playLoop == true ){ // keeps looping if playLoop is on
+      std::string sequenceName = "sound" + std::to_string(sequenceFileNum-1); //loop prev file 
+      std::cout<<"play sequence: " << sequenceName <<std::endl;
+      synthManager.synthSequencer().playSequence(sequenceName + ".synthSequence"); 
+      loopCounter++; 
+      recordDuration = synthManager.synthSequencer().getSequenceDuration(sequenceName + ".synthSequence");
+      time.start();
+      }     
   }
 
 
@@ -306,7 +283,6 @@ struct MusicBrush : App {
     screenPos.y = ((height() - m.y()) * 1. / height()) * 2. - 1.;
     screenPos.z = 1.;
     Vec3d worldPos = unproject(screenPos);
-    //add a sphere to plane
     Vec3f position = Vec3f(worldPos.x, worldPos.y, worldPos.z);
 
     Color sphereColor = colorPicker;
@@ -327,7 +303,6 @@ struct MusicBrush : App {
 
     //add dragged dots to burshstrokes most recent stroke
     brushstrokes.back().dots.push_back(std::pair<Vec3d, al_sec>(position, timeElapsedFromStartStroke));
-    
 
     return true;
   }

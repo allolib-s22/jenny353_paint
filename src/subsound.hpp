@@ -92,7 +92,6 @@ public:
     float z = getInternalParameterValue("posZ");
     Vec3f position = Vec3f(x, y, z);
     Color sphereColor{red, green, blue, alpha};
-    //std::cout<<" In on process graphics " << sphereColor.a  <<std::endl;
     g.lighting(true);
     //draw and color spheres 
     g.pushMatrix();
