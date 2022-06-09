@@ -5,15 +5,15 @@
 ![Screen Shot 2022-06-08 at 11 04 16 AM](https://user-images.githubusercontent.com/43687816/172688138-3ee16b69-c39e-4e51-85e2-abc824d78625.png)
 
 
-### To use: 
+### Set up instructions: 
 Follow directions in the [README.md](https://github.com/allolib-s22/jenny353_paint#readme)
 
 
 ### To use spacebar loop pedal:
-Tap the spacebar to start recording a sequence to loop,
-Tap the spacebar again to stop recording and start playing the loop. 
-Repeat to keep adding sequences to the loop
-On shift, the sequence will finish playing. 
+- Tap the spacebar to start recording a sequence to loop.
+- Tap the spacebar again to stop recording and start playing the loop. 
+- Repeat to keep adding sequences to the loop.
+- Tapping the shift key will end the current sequence playing.
 
 
 ## Other Versions: 
