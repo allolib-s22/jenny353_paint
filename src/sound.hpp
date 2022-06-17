@@ -19,7 +19,7 @@
 
 using namespace al;
 
-class Sound : public SynthVoice {
+class Sound : public PositionedVoice {
  public:
   // Unit generators
   gam::Pan<> mPan;
